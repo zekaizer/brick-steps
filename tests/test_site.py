@@ -69,10 +69,31 @@ def test_web_manifest_is_standalone_app():
     assert m["background_color"] == "#f2f7f8" and {i["sizes"] for i in m["icons"]} == {"192x192", "512x512"}
 
 
-def test_only_ready_models_publish_unless_drafts_included():
-    assert is_published({"status": "ready"}, False)
-    assert not is_published({"status": "draft"}, False)
-    assert is_published({"status": "draft"}, True)
+def test_only_ready_models_go_to_the_gallery():
+    assert is_published({"status": "ready"})
+    assert not is_published({"status": "draft"}) and not is_published({})
+
+
+def test_gallery_logo_leads_to_the_hidden_lab():
+    html = gallery_html([])
+    assert 'data-lab="lab/"' in html and 'href="lab/' not in html
+
+
+def test_lab_gallery_marks_every_card_as_in_progress_and_hides_from_search():
+    html = gallery_html([GalleryCard("tank-1", "탱크 1호", "tank-1/img/hero.png", 114, 14)], lab=True)
+    assert '<meta name="robots" content="noindex">' in html
+    assert "실험실" in html and "만드는 중" in html and 'href="tank-1/"' in html
+    assert 'href="../assets/site.css"' in html and 'src="../brand/brick-steps-lockup.svg"' in html
+    assert 'data-sw="../sw.js"' in html and 'href="../"' in html and "data-lab" not in html
+    assert "실험실이 비어 있어요" in gallery_html([], lab=True)
+
+
+def test_draft_manual_says_it_is_untested_and_hides_from_search():
+    draft = ManualView("tank-1", "탱크 1호", 1, "img/hero.png", [StepView(1, "img/s0-01.png")], draft=True)
+    html = manual_html(draft, assets="../../assets/")
+    assert '<meta name="robots" content="noindex">' in html and "아직 만들어 보지 않은 설계예요" in html
+    plain = manual_html(VIEW, assets="./")
+    assert "noindex" not in plain and "아직 만들어 보지 않은" not in plain
 
 
 def test_pages_load_brand_fonts_and_favicons():

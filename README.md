@@ -24,7 +24,7 @@ Brick Steps is a set of original robots for LEGO® SPIKE™ Prime, designed toge
 uv sync
 uv run lc fetch-ldraw
 uv run lc validate <model>
-uv run lc site --include-drafts   # needs LeoCAD 25.09 and Xvfb
+uv run lc site   # needs LeoCAD 25.09 and Xvfb; drafts go to site/lab/
 ```
 
 `CLAUDE.md` describes the layout and rules, `docs/adr/` records the design decisions, and `docs/releasing.md` covers versioning.

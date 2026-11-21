@@ -14,6 +14,19 @@
     }).catch(function () {});
   }
 
+  // The hidden lab of drafts: five taps on the gallery logo within two seconds.
+  var lab = document.body.getAttribute("data-lab");
+  var brand = document.querySelector(".site-head .brand");
+  if (lab && brand) {
+    var taps = [];
+    brand.addEventListener("click", function () {
+      var now = Date.now();
+      taps = taps.filter(function (t) { return now - t < 2000; });
+      taps.push(now);
+      if (taps.length >= 5) location.href = lab;
+    });
+  }
+
   var deck = document.getElementById("deck");
   var pager = document.querySelector(".pager");
   if (!deck || !pager) {

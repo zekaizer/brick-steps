@@ -23,7 +23,7 @@ Original LEGO SPIKE Prime builds: LDraw models, kit-constrained BOM checks, buil
 - `uv run lc validate <slug>` — exit 1 on any error
 - `uv run lc bom <slug>`
 - `uv run lc instructions <slug> [--no-pdf]` — one manual (HTML + PDF) into `models/<slug>/out/manual/`
-- `uv run lc site [--include-drafts] [--no-pdf]` — gallery + manuals into `site/` (what GitHub Pages serves)
+- `uv run lc site [--no-pdf]` — gallery of ready models + manuals into `site/` (what GitHub Pages serves), and every other model in the hidden lab `site/lab/`
 - `uv run lc fetch-ldraw`, `uv run lc import-inventory 45678-1 45681-1`
 - `uv run lc release-check vX.Y.Z` — tag, pyproject and CHANGELOG agree; prints release notes
 - `uv run pytest`
@@ -36,7 +36,7 @@ Original LEGO SPIKE Prime builds: LDraw models, kit-constrained BOM checks, buil
 - Improving a model is a revision of the same slug (`lc revise`); a model that adds or changes what it does is the next number in its series (`lc new <series> --from <slug>`). Never edit `version` or `revisions` by hand, and never renumber or reuse a slug.
 - Hub ports are declared only in the `.mpd` (`0 !LC PORT`); do not duplicate them in `model.yaml`.
 - `lc validate` checks line syntax, rotation matrices (proper rotation, det +1), color codes against LDConfig, part resolution, aliases, kit inventory, ports, the catalog fields (slug, revisions, `based_on`) and missions (known blocks, argument kinds, only declared ports). It does not check physical connectivity, collisions, grid alignment or mechanism behaviour; those need human review in a viewer (LeoCAD/LDCad) or on the real build.
-- Instruction export needs LeoCAD 25.09, Xvfb and Pango (ADR 0001). The site is kid-facing Korean; only `status: ready` models are published.
+- Instruction export needs LeoCAD 25.09, Xvfb and Pango (ADR 0001). The site is kid-facing Korean; only `status: ready` models are in the gallery. Drafts go to the hidden lab (`/lab/`, five taps on the gallery logo, `noindex`); it is hidden, not private.
 - Children program in the SPIKE App with word blocks on the stock firmware (ADR 0003); the repository keeps no Pybricks programs. The Korean block wording in `missions.py` must match the app; blocks not yet compared with the app are marked unchecked, and `lc validate` warns when a mission uses one.
 - The 3D step view (ADR 0002) is an enhancement over the rendered pictures and has no automated test. After changing `viewer3d.js`, `manual.js` or `pack3d.py`, build a site and check a manual in a browser.
 - Site look follows the Brick Steps design system, a private claude.ai artifact (link in `CLAUDE.local.md`). Read its README before changing `site_assets/components.css`; every value there must come from a token.

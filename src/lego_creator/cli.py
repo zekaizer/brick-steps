@@ -256,8 +256,9 @@ def _export_env(root: Path, args: argparse.Namespace) -> ExportEnv:
 
 def cmd_site(root: Path, _lib: Library, args: argparse.Namespace) -> int:
     out = args.out or root / "site"
-    cards = build_site(root, out, _export_env(root, args), include_drafts=args.include_drafts, pdf=not args.no_pdf)
-    print(f"{out}: {len(cards)} manual(s): {', '.join(c.slug for c in cards) or 'none'}")
+    cards, lab = build_site(root, out, _export_env(root, args), pdf=not args.no_pdf)
+    print(f"{out}: {len(cards)} manual(s): {', '.join(c.slug for c in cards) or 'none'}; "
+          f"lab: {', '.join(c.slug for c in lab) or 'none'}")
     return 0
 
 
@@ -325,9 +326,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--no-pdf", action="store_true")
     s.set_defaults(func=cmd_instructions)
 
-    s = sub.add_parser("site", help="build the gallery + manuals site (GitHub Pages) via LeoCAD")
+    s = sub.add_parser("site", help="build the gallery, manuals and the hidden lab of drafts (GitHub Pages) via LeoCAD")
     s.add_argument("--out", type=Path, help="default: <root>/site")
-    s.add_argument("--include-drafts", action="store_true", help="also publish models whose status is not ready")
     s.add_argument("--no-pdf", action="store_true")
     s.set_defaults(func=cmd_site)
 

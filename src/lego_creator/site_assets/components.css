@@ -76,6 +76,11 @@ h1, p, figure { margin: 0; }
 .slot { background: var(--surface); color: var(--ink); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
 .try { background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); }
 
+/* Hidden lab of drafts */
+.wip-chip { justify-self: start; background: var(--ink); color: var(--surface); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
+.draft-note { background: var(--ink); color: var(--surface); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); justify-self: stretch; text-align: start; }
+.site-head .brand { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
 /* Finished */
 .badge { background: var(--green); color: var(--surface); border-radius: var(--radius-pill); padding: var(--space-2) var(--space-6); }
 
