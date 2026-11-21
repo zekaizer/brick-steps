@@ -64,7 +64,7 @@
   "type": {
     "fonts": [],
     "families": {
-      "display": "\"Jua\", \"Noto Sans KR\", system-ui, sans-serif",
+      "display": "\"Lexend\", \"Noto Sans KR\", system-ui, sans-serif",
       "body": "\"Noto Sans KR\", \"Apple SD Gothic Neo\", system-ui, sans-serif"
     },
     "groups": [
@@ -76,7 +76,7 @@
             "name": "step-number",
             "fontSize": "64px",
             "lineHeight": 1,
-            "fontWeight": 400,
+            "fontWeight": 600,
             "sample": "12",
             "usage": "스텝 화면 왼쪽 위의 현재 스텝 번호. `ink`."
           },
@@ -84,7 +84,7 @@
             "name": "title",
             "fontSize": "32px",
             "lineHeight": "40px",
-            "fontWeight": 400,
+            "fontWeight": 700,
             "sample": "탱크 로봇",
             "usage": "갤러리 카드와 매뉴얼 표지의 모델 이름."
           },
@@ -92,7 +92,7 @@
             "name": "heading",
             "fontSize": "24px",
             "lineHeight": "32px",
-            "fontWeight": 400,
+            "fontWeight": 700,
             "sample": "바퀴 묶음 만들기",
             "usage": "섹션 제목: 부분 조립 이름, 필요한 부품."
           },
@@ -100,7 +100,7 @@
             "name": "count",
             "fontSize": "28px",
             "lineHeight": 1,
-            "fontWeight": 400,
+            "fontWeight": 600,
             "sample": "×2",
             "usage": "부품 트레이에서 썸네일 옆 개수."
           },
@@ -108,7 +108,7 @@
             "name": "button",
             "fontSize": "22px",
             "lineHeight": 1,
-            "fontWeight": 400,
+            "fontWeight": 600,
             "sample": "다음",
             "usage": "다음·이전 버튼 글자."
           }

@@ -63,7 +63,9 @@ h1, p, figure { margin: 0; }
 .pager button:disabled { visibility: hidden; }
 
 /* Gallery */
-.gallery .wrap > h1 { padding-top: var(--space-4); }
+.site-head { display: grid; gap: var(--space-2); padding-top: var(--space-4); }
+.site-head .brand { height: var(--tap-min); width: auto; max-width: 100%; }
+.tagline { color: var(--ink-muted); }
 .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); }
 @media (max-width: 479px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 .model-card { display: grid; gap: var(--space-2); min-height: var(--tap-min); background: var(--surface); border-radius: var(--radius-md); padding: var(--space-4); color: var(--ink); text-decoration: none; }

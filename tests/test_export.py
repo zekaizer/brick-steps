@@ -34,6 +34,7 @@ MODEL = """0 FILE main.ldr
 
 def test_build_site_end_to_end(tmp_path):
     root = tmp_path / "repo"
+    shutil.copytree(ROOT / "design", root / "design")
     for slug, status in (("bot", "ready"), ("wip", "draft")):
         d = root / "models" / slug
         d.mkdir(parents=True)
@@ -48,7 +49,8 @@ def test_build_site_end_to_end(tmp_path):
     assert [c.slug for c in cards] == ["bot"]
     assert cards[0].step_count == 4 and cards[0].part_count == 4
     for rel in ("index.html", "sw.js", "manifest.webmanifest", "assets/site.css", "assets/manual.js",
-                "icon-192.png", "icon-512.png", "icon-180.png", "bot/index.html", "bot/manual.pdf", "bot/img/hero.png"):
+                "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "favicon.svg",
+                "favicon-32.png", "brand/brick-steps-lockup.svg", "bot/index.html", "bot/manual.pdf", "bot/img/hero.png"):
         assert (out / rel).is_file(), rel
     assert not (out / "wip").exists()
     page = (out / "bot" / "index.html").read_text(encoding="utf-8")

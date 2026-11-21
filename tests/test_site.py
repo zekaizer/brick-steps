@@ -72,3 +72,22 @@ def test_only_ready_models_publish_unless_drafts_included():
     assert is_published({"status": "ready"}, False)
     assert not is_published({"status": "draft"}, False)
     assert is_published({"status": "draft"}, True)
+
+
+def test_pages_load_brand_fonts_and_favicons():
+    html = manual_html(VIEW, assets="../assets/", sw="../sw.js", manifest="../manifest.webmanifest")
+    assert "family=Lexend" in html and "Jua" not in html
+    assert 'rel="icon" type="image/svg+xml" href="../favicon.svg"' in html
+    assert 'rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png"' in html
+    assert 'rel="apple-touch-icon" href="../apple-touch-icon.png"' in html
+
+
+def test_gallery_header_shows_logo_and_tagline():
+    html = gallery_html([])
+    assert '<img class="brand" src="brand/brick-steps-lockup.svg" alt="Brick Steps"' in html
+    assert "AI와 함께 만들고, 한 단계씩 따라 해요" in html
+
+
+def test_web_manifest_has_maskable_icon():
+    icons = json.loads(web_manifest("#f2f7f8"))["icons"]
+    assert {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"} in icons

@@ -29,7 +29,16 @@ from .site import (
 ASSETS = Path(__file__).parent / "site_assets"
 STEP_SIZE = (1400, 1050)
 THUMB_SIZE = 216
-ICON_PART = "1 14 0 0 0 1 0 0 0 1 0 0 0 1 3003.dat"
+# Synced from the Brick Steps design system (design/brand); copied into the site root as-is.
+BRAND_FILES = {
+    "icon-512.png": "icon-512.png",
+    "icon-192.png": "icon-192.png",
+    "icon-maskable-512.png": "icon-maskable-512.png",
+    "apple-touch-icon.png": "apple-touch-icon.png",
+    "favicon-32.png": "favicon-32.png",
+    "favicon.svg": "brick-steps-mark-small.svg",
+    "brand/brick-steps-lockup.svg": "brick-steps-lockup.svg",
+}
 
 
 @dataclass(frozen=True)
@@ -136,14 +145,11 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
     return GalleryCard(slug, name, f"{slug}/{rel(hero)}", view.part_count, len(steps))
 
 
-def _icons(out: Path, env: ExportEnv) -> None:
-    text = f"0 FILE icon.ldr\n{ICON_PART}\n"
-    mpd = out / ".icon.mpd"
-    mpd.write_text(text, encoding="utf-8")
-    for size in (512, 192, 180):
-        render_image(mpd, out / f"icon-{size}.png", env.ldraw, env.config_dir / f"icon-{size}", width=size,
-                     height=size, background=env.color("paper"))
-    mpd.unlink()
+def _brand(root: Path, out: Path) -> None:
+    src = root / "design" / "brand"
+    for dest, name in BRAND_FILES.items():
+        (out / dest).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src / name, out / dest)
 
 
 def build_site(root: Path, out: Path, env: ExportEnv, *, include_drafts: bool, pdf: bool) -> list[GalleryCard]:
@@ -153,7 +159,7 @@ def build_site(root: Path, out: Path, env: ExportEnv, *, include_drafts: bool, p
     shutil.copyfile(ASSETS / "sw.js", out / "sw.js")
     (out / "manifest.webmanifest").write_text(web_manifest(env.color("paper")), encoding="utf-8")
     (out / ".nojekyll").write_text("", encoding="utf-8")
-    _icons(out, env)
+    _brand(root, out)
 
     cards = []
     for meta_path in sorted((root / "models").glob("*/model.yaml")):
