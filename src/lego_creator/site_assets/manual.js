@@ -1,4 +1,5 @@
-// Brick Steps: one card per screen, buttons + swipe + arrow keys, resume via hash, offline via service worker.
+// Brick Steps: one card per screen, buttons + swipe + arrow keys, section bar + contents jumps,
+// resume via hash, offline via service worker.
 (function () {
   "use strict";
 
@@ -39,10 +40,36 @@
   var next = pager.querySelector(".next");
   var key = "brick-steps:" + location.pathname;
   var current = 0;
+  var chapters = document.querySelector(".chapters");
+  var contents = document.querySelector(".contents");
+  var builds = cards.filter(function (c) { return c.getAttribute("data-chapter") === "build"; });
+  var furthest = 0;
+  try { furthest = Math.max(0, cards.indexOf(document.getElementById(localStorage.getItem(key + ":max")))); } catch (e) {}
 
   function indexOf(id) {
     for (var k = 0; k < cards.length; k++) if (cards[k].id === id) return k;
     return -1;
+  }
+
+  function mark() {
+    var card = cards[current];
+    var chapter = card.getAttribute("data-chapter");
+    if (chapters) {
+      var built = 0;
+      for (var b = 0; b < builds.length; b++) if (cards.indexOf(builds[b]) <= current) built++;
+      chapters.querySelectorAll(".chapter").forEach(function (a) {
+        var c = a.getAttribute("data-chapter");
+        if (c === chapter) a.setAttribute("aria-current", "step"); else a.removeAttribute("aria-current");
+        if (c === "build") a.style.setProperty("--fill", (builds.length ? 100 * built / builds.length : 0) + "%");
+      });
+    }
+    if (contents) {
+      contents.querySelectorAll(".tile").forEach(function (a) {
+        var k = indexOf(a.getAttribute("href").slice(1));
+        a.classList.toggle("seen", k > 0 && k <= furthest && a.classList.contains("step"));
+        if (k === current) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+      });
+    }
   }
 
   function show(k, dir) {
@@ -51,12 +78,16 @@
     current = k;
     var card = cards[current];
     card.style.setProperty("--dir", (dir || 0) * 24 + "px");
+    // A jump from the section bar or contents swaps the card at once, without the slide.
+    card.classList.toggle("jump", !dir);
     card.classList.add("on");
     prev.disabled = current === 0;
     next.textContent = current === 0 ? "시작하기 ›" : current === cards.length - 1 ? "처음으로" : "다음 ›";
     if (history.replaceState) history.replaceState(null, "", "#" + card.id);
     window.scrollTo(0, 0);
-    try { localStorage.setItem(key, card.id); } catch (e) {}
+    furthest = Math.max(furthest, current);
+    try { localStorage.setItem(key, card.id); localStorage.setItem(key + ":max", cards[furthest].id); } catch (e) {}
+    mark();
     document.dispatchEvent(new CustomEvent("brick-steps:show", { detail: { card: card, dir: dir || 0 } }));
   }
 
@@ -70,6 +101,32 @@
   document.addEventListener("keydown", function (e) {
     if (e.key === "ArrowRight") forward();
     if (e.key === "ArrowLeft") back();
+  });
+
+  function jump(e) {
+    var a = e.target.closest("a[href^='#']");
+    if (!a) return;
+    var k = indexOf(a.getAttribute("href").slice(1));
+    if (k < 0) return;
+    e.preventDefault();
+    if (contents && contents.open) contents.close();
+    show(k, 0);
+  }
+  if (chapters) {
+    chapters.hidden = false;
+    chapters.addEventListener("click", jump);
+    var toc = chapters.querySelector(".toc");
+    if (contents && contents.showModal) {
+      toc.addEventListener("click", function () { mark(); contents.showModal(); });
+      contents.addEventListener("click", jump);
+      contents.querySelector(".close").addEventListener("click", function () { contents.close(); });
+    } else {
+      toc.hidden = true;
+    }
+  }
+  window.addEventListener("hashchange", function () {
+    var k = indexOf(location.hash.slice(1));
+    if (k >= 0 && k !== current) show(k, 0);
   });
 
   var startX = null;

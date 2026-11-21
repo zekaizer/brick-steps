@@ -2,7 +2,8 @@
 *, *::before, *::after { box-sizing: border-box; }
 /* manipulation: no double-tap zoom on iPad (pinch zoom still works), so quick taps stay taps. */
 html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
-body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); }
+/* keep-all: Korean lines break between words, not inside them. */
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); word-break: keep-all; overflow-wrap: break-word; }
 img { max-width: 100%; }
 a { color: var(--azure-deep); }
 :focus-visible { outline: 3px solid var(--azure-deep); outline-offset: 2px; }
@@ -25,16 +26,80 @@ h1, p, figure { margin: 0; }
 .deck.js .card { display: none; }
 .deck.js .card.on { display: grid; animation: slide-in 160ms ease-out; }
 @keyframes slide-in { from { transform: translateX(var(--dir, 24px)); opacity: 0.4; } to { transform: none; opacity: 1; } }
+.deck.js .card.on.jump { animation: none; }
 @media (prefers-reduced-motion: reduce) { .deck.js .card.on { animation: none; } }
 
 .hero { width: 100%; height: auto; border-radius: var(--radius-md); background: var(--paper); display: block; }
-.cover, .done { justify-items: center; text-align: center; }
+.cover .side, .done .side { justify-items: center; text-align: center; }
+
+/* One card fills the screen in both orientations: the info takes what it needs, the picture the rest.
+   Landscape (iPad mini 1133 x 744) puts the info in a side panel left of the picture. */
+.side { display: grid; gap: var(--space-4); align-content: start; }
+.manual .deck.js {
+  height: 100dvh; grid-template-rows: minmax(0, 1fr);
+  padding-block: calc(var(--tap-min) + 2 * var(--space-2) + var(--space-4) + env(safe-area-inset-top, 0px)) calc(var(--tap-min) + 2 * var(--space-4) + env(safe-area-inset-bottom, 0px));
+}
+.deck.js .card.on { display: flex; flex-direction: column; gap: var(--space-4); min-height: 0; }
+.deck.js .main { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; }
+.deck.js .main > .step-img { height: 100%; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; }
+.deck.js .main .stage3d { aspect-ratio: auto; width: 100%; height: 100%; }
+.deck.js .main img { max-height: 100%; width: auto; object-fit: contain; }
+.deck.js .mission .main { place-items: start; overflow: auto; }
+/* Portrait cover: the finished model on top at full width, its name and story right under it. */
+@media (orientation: portrait), (max-width: 899px) {
+  .deck.js .cover.on { justify-content: center; }
+  .deck.js .cover .main { flex: 0 1 auto; order: -1; }
+  .deck.js .cover .main img { width: 100%; height: auto; }
+}
+
+/* Section bar: brand mark home, the manual's parts, contents. Fixed at the top; current part outlined,
+   the build part fills with azure as steps are turned. */
+.chapters {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 2; background: var(--paper);
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) max(var(--space-4), env(safe-area-inset-right, 0px), calc(50% - var(--page-max) / 2 + var(--space-4))) var(--space-2) max(var(--space-4), env(safe-area-inset-left, 0px), calc(50% - var(--page-max) / 2 + var(--space-4)));
+}
+.chapters .home { flex: none; display: block; line-height: 0; }
+/* 48px: the full mark's smallest size (design system). */
+.chapters .home img { width: calc(var(--tap-min) - var(--space-2)); height: auto; }
+.chapter, .chapters .toc, .contents .close {
+  min-height: var(--tap-min); border-radius: var(--radius-pill); color: var(--ink); text-decoration: none; cursor: pointer;
+}
+.chapter {
+  flex: 1; min-width: 0; position: relative; overflow: hidden; display: grid; place-items: center;
+  background: var(--surface); border: 3px solid var(--surface); white-space: nowrap;
+}
+.chapter[data-chapter="build"]::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--fill, 0%); background: var(--azure); }
+.chapter span { position: relative; }
+.chapter[aria-current] { border-color: var(--azure-deep); }
+.chapters .toc, .contents .close { flex: none; padding: 0 var(--space-6); background: var(--surface); border: 3px solid var(--azure-deep); }
+
+/* Contents: a full-screen sheet with a tile per card */
+.contents {
+  position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; border: 0;
+  background: var(--paper); color: var(--ink); overflow: auto;
+  padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) max(var(--space-4), env(safe-area-inset-right, 0px)) calc(var(--space-6) + env(safe-area-inset-bottom, 0px)) max(var(--space-4), env(safe-area-inset-left, 0px));
+}
+.contents-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-6); }
+.contents h2 { margin: 0; }
+.tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+.tile {
+  position: relative; height: 100%; min-height: var(--tap-min); display: grid; align-content: start; justify-items: center; gap: var(--space-2);
+  padding: var(--space-2); background: var(--surface); border: 3px solid var(--surface); border-radius: var(--radius-md);
+  color: var(--ink); text-decoration: none; text-align: center;
+}
+.tile img { object-fit: contain; }
+.tile img, .tile .play-mark { width: 100%; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); background: var(--paper); }
+.tile .play-mark { display: grid; place-items: center; color: var(--azure-deep); }
+.tile[aria-current] { border-color: var(--azure-deep); }
+.tile.seen::after {
+  content: "✓"; position: absolute; top: var(--space-2); right: var(--space-2);
+  background: var(--green); color: var(--surface); border-radius: var(--radius-pill); padding: 0 var(--space-2);
+}
 
 /* Step */
 .step-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
 .step-head .t-caption { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
-.progress { height: 8px; border-radius: var(--radius-pill); background: var(--paper); overflow: hidden; margin-top: calc(-1 * var(--space-4)); }
-.progress > i { display: block; height: 100%; background: var(--azure); border-radius: inherit; }
 .sub-label { justify-self: start; background: var(--magenta); color: var(--surface); border-radius: var(--radius-pill); padding: var(--space-2) var(--space-4); }
 
 /* Parts tray */
@@ -125,10 +190,30 @@ h1, p, figure { margin: 0; }
 @media (max-width: 479px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 .model-card { display: grid; gap: var(--space-2); min-height: var(--tap-min); background: var(--surface); border-radius: var(--radius-md); padding: var(--space-4); color: var(--ink); text-decoration: none; }
 .model-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: var(--radius-sm); background: var(--paper); }
-.model-card .t-caption, .empty { color: var(--ink-muted); }
+.model-card .t-caption, .empty, .site-foot, .version { color: var(--ink-muted); }
+.site-foot { padding-top: var(--space-10); text-align: center; }
 
 /* PDF (WeasyPrint): one card per page */
 @page { size: A4; margin: 12mm; }
 .print { background: var(--surface); }
 .print .wrap { max-width: none; padding: 0; display: block; }
 .print .card { break-after: page; padding: 0; }
+
+/* Landscape iPad mini (1133 x 744): last, so it overrides the portrait rules above. */
+@media (orientation: landscape) and (min-width: 900px) {
+  .manual .deck.js { max-width: none; padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); }
+  .deck.js .card.on { display: grid; grid-template-columns: var(--side-panel) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-6); }
+  /* Room at the bottom of the panel for the pager, which sits there in landscape. */
+  .deck.js .side { min-height: 0; overflow: auto; padding-bottom: calc(var(--tap-min) + var(--space-4)); }
+  .deck.js .cover .side, .deck.js .done .side { align-content: center; }
+  .deck.js .main { height: 100%; }
+  .pager {
+    left: calc(2 * var(--space-4) + env(safe-area-inset-left, 0px)); right: auto;
+    bottom: calc(2 * var(--space-4) + env(safe-area-inset-bottom, 0px));
+    width: var(--side-panel); padding: 0; background: none;
+  }
+  .chapters { padding-left: max(var(--space-4), env(safe-area-inset-left, 0px)); padding-right: max(var(--space-4), env(safe-area-inset-right, 0px)); }
+  .tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .gallery .wrap { max-width: var(--page-wide); }
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

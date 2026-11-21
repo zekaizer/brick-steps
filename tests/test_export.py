@@ -54,7 +54,7 @@ def test_build_site_end_to_end(tmp_path):
     assert cards[0].step_count == 4 and cards[0].part_count == 4
     for rel in ("index.html", "sw.js", "manifest.webmanifest", "assets/site.css", "assets/manual.js",
                 "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "favicon.svg",
-                "favicon-32.png", "brand/brick-steps-lockup.svg", "bot/index.html", "bot/manual.pdf", "bot/img/hero.png",
+                "favicon-32.png", "brand/brick-steps-lockup.svg", "brand/brick-steps-mark.svg", "bot/index.html", "bot/manual.pdf", "bot/img/hero.png",
                 "bot/model3d.txt", "assets/viewer3d.js", "assets/vendor/three/three.module.min.js",
                 "assets/vendor/three/addons/loaders/LDrawLoader.js"):
         assert (out / rel).is_file(), rel
@@ -69,6 +69,11 @@ def test_build_site_end_to_end(tmp_path):
     for src in __import__("re").findall(r'src="([^"]+\.png)"', page):
         assert (out / "bot" / src).resolve().is_file(), src
     assert (out / "bot" / "manual.pdf").read_bytes()[:4] == b"%PDF"
+    assert "Brick Steps " + __import__("importlib.metadata").metadata.version("lego-creator") in (out / "index.html").read_text(encoding="utf-8")
+    assert 'href="../" aria-label="처음으로"' in page and 'href="../" aria-label="처음으로"' in draft
+    for html, base in ((page, out / "bot"), (draft, out / "lab" / "wip")):
+        mark = __import__("re").search(r'src="([^"]+brick-steps-mark\.svg)"', html).group(1)
+        assert (base / mark).resolve().is_file(), mark
     assert 'data-sub="board.ldr" data-shown="3" data-fresh="2"' in page
     assert page.index('id="step-1"') < page.index('id="cables"') < page.index('id="step-2"') and "보드" in page
     assert "보드를 지켜요." in page and 'id="mission-1"' in page and 'data-block="wait"' in page

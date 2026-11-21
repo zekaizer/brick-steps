@@ -67,6 +67,7 @@ class ManualView:
     cables: CableView | None = None
     intro: str | None = None
     missions: list[MissionView] = field(default_factory=list)
+    version: int | None = None
 
 
 @dataclass(frozen=True)
@@ -80,6 +81,7 @@ class GalleryCard:
 
 FONTS = "https://fonts.googleapis.com/css2?family=Lexend:wght@600&family=Noto+Sans+KR:wght@400;500;700&display=swap"
 TAGLINE = "AI와 함께 만들고, 한 단계씩 따라 해요"
+MAKER = "만든 사람 Luke Lee"
 
 
 def _e(text: object) -> str:
@@ -130,6 +132,11 @@ def _tray(items: list[TrayItem]) -> str:
     )
 
 
+def _split(side: str, main: str) -> str:
+    """A card's info and its picture: stacked in portrait, side by side in landscape (components.css)."""
+    return f'<div class="side">{side}</div><div class="main">{main}</div>'
+
+
 def _cable_card(c: CableView, hooks: str, with_3d: bool) -> str:
     items = "".join(
         f'<li><span class="port port-{_e(it.port.lower())} t-heading">{_e(it.port)}</span>'
@@ -137,18 +144,59 @@ def _cable_card(c: CableView, hooks: str, with_3d: bool) -> str:
         for it in c.items
     )
     lines = f' data-cables="{_e(c.lines)}" data-keep="{_e(c.keep)}"' if with_3d and hooks else ""
-    return (
-        '<section class="card cable" id="cables">'
+    side = (
         '<h2 class="t-heading">케이블을 꽂아요</h2>'
         '<p class="t-body">같은 글자가 적힌 포트에 꽂아요.</p>'
         f'<ul class="cable-list">{items}</ul>'
-        f'<figure class="step-img"{hooks}{lines}><img src="{_e(c.image)}" alt="케이블을 꽂는 모습" loading="lazy"></figure>'
-        "</section>"
+    )
+    figure = f'<figure class="step-img"{hooks}{lines}><img src="{_e(c.image)}" alt="케이블을 꽂는 모습" loading="lazy"></figure>'
+    return f'<section class="card cable" id="cables" data-chapter="cables">{_split(side, figure)}</section>'
+
+
+def _chapters(view: ManualView, brand: str | None) -> str:
+    """Section bar fixed at the top: brand mark home, a link per part of the manual, and the contents button.
+
+    manual.js unhides it and marks the current part; without JS it stays hidden.
+    """
+    home = (f'<a class="home" href="../" aria-label="처음으로">'
+            f'<img src="{_e(brand)}brick-steps-mark.svg" alt="" width="48" height="48"></a>') if brand else ""
+    parts = [("build", "#step-1", "조립")]
+    if view.cables:
+        parts.append(("cables", "#cables", "케이블"))
+    parts.append(("done", "#done", "완성"))
+    if view.missions:
+        parts.append(("play", "#mission-1", "움직여 보기"))
+    links = "".join(f'<a class="chapter t-button" data-chapter="{c}" href="{href}"><span>{word}</span></a>'
+                    for c, href, word in parts)
+    return (f'<nav class="chapters" hidden aria-label="구간">{home}{links}'
+            '<button type="button" class="toc t-button">목차</button></nav>')
+
+
+def _contents(view: ManualView) -> str:
+    """Contents sheet: one tile per card, opened from the section bar."""
+    def tile(card_id: str, label: str, image: str | None = None, cls: str = "") -> str:
+        img = (f'<img src="{_e(image)}" alt="" loading="lazy">' if image
+               else '<span class="play-mark t-title" aria-hidden="true">▶</span>')
+        return f'<li><a class="tile{cls}" href="#{card_id}">{img}<span class="t-heading">{_e(label)}</span></a></li>'
+
+    tiles = [tile("cover", "처음", view.hero)]
+    for step in view.steps:
+        tiles.append(tile(f"step-{step.number}", str(step.number), step.image, " step"))
+        if view.cables and view.cables.after == step.number:
+            tiles.append(tile("cables", "케이블", view.cables.image))
+    tiles.append(tile("done", "완성", view.hero))
+    tiles += [tile(f"mission-{k}", f"움직여 보기 {k}", cls=" play") for k in range(1, len(view.missions) + 1)]
+    return (
+        '<dialog class="contents" aria-label="목차">'
+        '<div class="contents-head"><h2 class="t-title">목차</h2>'
+        '<button type="button" class="close t-button">닫기</button></div>'
+        f'<ul class="tiles">{"".join(tiles)}</ul></dialog>'
     )
 
 
+
 def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifest: str | None = None,
-                print_mode: bool = False) -> str:
+                print_mode: bool = False, brand: str | None = None) -> str:
     """One page holding every step as a card; manual.js shows one card at a time.
 
     Without JS (and in print_mode, used for the PDF) all cards are stacked.
@@ -161,52 +209,47 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
             return ""
         return f' data-sub="{_e(sub)}" data-shown="{shown}" data-fresh="{fresh}"'
 
-    cards = [
-        '<section class="card cover" id="cover">'
-        + ('<p class="draft-note t-body">아직 만들어 보지 않은 설계예요. 부품이 안 맞을 수 있어요.</p>' if view.draft else "")
-        +
-        f'<h1 class="t-title">{_e(view.name)}</h1>'
-        f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}">'
+    cover = (
+        ('<p class="draft-note t-body">아직 만들어 보지 않은 설계예요. 부품이 안 맞을 수 있어요.</p>' if view.draft else "")
+        + f'<h1 class="t-title">{_e(view.name)}</h1>'
         + (f'<p class="t-body intro">{_e(view.intro)}</p>' if view.intro else "")
         + f'<p class="t-body">부품 {view.part_count}개 · {total}단계</p>'
+        + (f'<p class="t-caption version">버전 {view.version}</p>' if view.version else "")
         + (f'<p class="t-caption"><a href="{_e(view.pdf)}">PDF로 보기</a></p>' if view.pdf and not print_mode else "")
-        + "</section>"
-    ]
+    )
+    hero = f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}">'
+    cards = [f'<section class="card cover" id="cover">{_split(cover, hero)}</section>']
     for step in view.steps:
-        pct = round(100 * step.number / total) if total else 100
         label = f'<p class="sub-label t-caption">{_e(step.section_title)}</p>' if step.section_title else ""
-        cards.append(
-            f'<section class="card step" id="step-{step.number}">'
+        side = (
             '<div class="step-head">'
             f'<span class="t-step-number">{step.number}</span>'
             f'<span class="t-caption">{step.number} / {total} 단계</span>'
             "</div>"
-            f'<div class="progress" aria-hidden="true"><i style="width:{pct}%"></i></div>'
             f"{label}{_tray(step.tray)}"
-            f'<figure class="step-img"{hooks(step.sub, step.shown, step.fresh)}><img src="{_e(step.image)}" alt="{step.number}단계 조립 모습" loading="lazy"></figure>'
-            "</section>"
         )
+        figure = (f'<figure class="step-img"{hooks(step.sub, step.shown, step.fresh)}>'
+                  f'<img src="{_e(step.image)}" alt="{step.number}단계 조립 모습" loading="lazy"></figure>')
+        cards.append(f'<section class="card step" id="step-{step.number}" data-chapter="build">{_split(side, figure)}</section>')
         if view.cables and view.cables.after == step.number:
             cards.append(_cable_card(view.cables, hooks(view.cables.sub, view.cables.shown, 0), with_3d))
-    cards.append(
-        '<section class="card done" id="done">'
+    done = (
         '<p class="badge t-heading">완성!</p>'
         f'<h1 class="t-title">{_e(view.name)}</h1>'
-        f'<figure class="step-img"{hooks(view.main_sub, view.done_shown, 0)}>'
-        f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}"></figure>'
         + ('<p class="t-caption credit">부품 모양은 LDraw.org Parts Library(CC BY 4.0)에서 왔어요.</p>' if with_3d else "")
-        + "</section>"
+        + f'<p class="t-caption credit">{MAKER}</p>'
     )
+    figure = (f'<figure class="step-img"{hooks(view.main_sub, view.done_shown, 0)}>'
+              f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}"></figure>')
+    cards.append(f'<section class="card done" id="done" data-chapter="done">{_split(done, figure)}</section>')
     for k, mission in enumerate(view.missions, 1):
-        cards.append(
-            f'<section class="card mission" id="mission-{k}">'
+        side = (
             f'<p class="mission-label t-caption">움직여 보기 {k} / {len(view.missions)}</p>'
             f'<h2 class="t-heading">{_e(mission.title)}</h2>'
             + (f'<p class="t-body">{_e(mission.goal)}</p>' if mission.goal else "")
-            + mission.blocks
             + (f'<p class="try t-body">{_e(mission.try_)}</p>' if mission.try_ else "")
-            + "</section>"
         )
+        cards.append(f'<section class="card mission" id="mission-{k}" data-chapter="play">{_split(side, mission.blocks)}</section>')
     if print_mode:
         body_attrs = ' class="manual print"'
     else:
@@ -220,6 +263,8 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
            f'<main class="wrap deck" id="deck">{"".join(cards)}</main>']
     if not print_mode:
         out += [
+            _chapters(view, brand),
+            _contents(view),
             (
                 '<nav class="pager" hidden><div class="pager-in">'
                 '<button type="button" class="prev t-button">‹ 이전</button>'
@@ -239,7 +284,7 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
     return "\n".join(out)
 
 
-def gallery_html(cards: list[GalleryCard], *, lab: bool = False) -> str:
+def gallery_html(cards: list[GalleryCard], *, lab: bool = False, version: str | None = None) -> str:
     """The gallery of ready models, or with lab=True the hidden lab of drafts under lab/.
 
     The gallery logo opens the lab after five taps (manual.js); nothing links to it.
@@ -271,7 +316,8 @@ def gallery_html(cards: list[GalleryCard], *, lab: bool = False) -> str:
             '<main class="wrap"><header class="site-head">'
             f'<img class="brand" src="{up}brand/brick-steps-lockup.svg" alt="Brick Steps" width="488" height="113">'
             f'<p class="tagline t-caption">{TAGLINE}</p></header>'
-            f'{heading}{body}</main>'
+            f'{heading}{body}'
+            f'<footer class="site-foot t-caption">Brick Steps{" " + _e(version) if version else ""} · {MAKER}</footer></main>'
         ),
         f'<script src="{up}assets/manual.js" defer></script>',
         "</body>\n</html>\n",
@@ -286,7 +332,7 @@ def web_manifest(paper: str) -> str:
         "start_url": "./",
         "scope": "./",
         "display": "standalone",
-        "orientation": "portrait",
+        "orientation": "any",
         "background_color": paper,
         "theme_color": paper,
         "icons": [

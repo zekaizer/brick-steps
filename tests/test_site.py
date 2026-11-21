@@ -228,3 +228,106 @@ def test_cable_card_in_print_has_no_3d_hooks():
     html = manual_html(VIEW_CABLES, assets="./", print_mode=True)
     card = html[html.index('id="cables"'):html.index('id="step-2"')]
     assert "케이블을 꽂아요" in card and "data-cables" not in card
+
+
+def _card(html: str, card_id: str) -> str:
+    start = html.index(f'id="{card_id}"')
+    return html[start:html.index("</section>", start)]
+
+
+def test_every_card_splits_into_info_and_picture():
+    html = manual_html(VIEW_CABLES, assets="../assets/")
+    for card_id in ("cover", "step-1", "cables", "done"):
+        card = _card(html, card_id)
+        assert '<div class="side">' in card and '<div class="main">' in card, card_id
+        assert card.index('<div class="side">') < card.index('<div class="main">'), card_id
+    step = _card(html, "step-1")
+    side, main = step.split('<div class="main">')
+    assert "step-head" in side and "<figure" in main and "<figure" not in side
+    assert 'class="hero"' in _card(html, "cover").split('<div class="main">')[1]
+
+
+def test_mission_card_puts_the_blocks_beside_the_goal():
+    view = ManualView("t", "t", 1, "h.png", [StepView(1, "a.png")],
+                      missions=[MissionView("앞뒤로", "앞으로 가요.", '<ul class="blocks"></ul>', "바꿔 봐요")])
+    side, main = _card(manual_html(view, assets="./"), "mission-1").split('<div class="main">')
+    assert "앞뒤로" in side and "바꿔 봐요" in side and 'class="blocks"' in main
+
+
+def test_web_manifest_allows_both_orientations():
+    assert json.loads(web_manifest("#fff"))["orientation"] == "any"
+
+
+def test_site_css_has_a_landscape_layout_and_fills_the_screen():
+    from pathlib import Path
+
+    css = (Path(__file__).resolve().parents[1] / "src" / "lego_creator" / "site_assets" / "components.css").read_text()
+    assert "(orientation: landscape)" in css and "var(--side-panel)" in css and "100dvh" in css
+
+
+VIEW_ALL = ManualView(
+    slug="tank-1", name="탱크 1호", part_count=10, hero="img/hero.png",
+    steps=[StepView(1, "img/s0-01.png"), StepView(2, "img/s0-02.png")],
+    cables=CableView(after=1, sub="main.ldr", shown=2, image="img/s0-01.png", items=[CableItem("A", "큰 모터", "p.png")]),
+    missions=[MissionView("앞뒤로", "", '<ul class="blocks"></ul>'), MissionView("돌기", "", '<ul class="blocks"></ul>')],
+)
+
+
+def test_section_bar_jumps_to_each_part_of_the_manual():
+    html = manual_html(VIEW_ALL, assets="../assets/")
+    bar = html[html.index('<nav class="chapters"'):html.index("</nav>")]
+    assert "hidden" in bar[:bar.index(">")]
+    links = [('href="#step-1"', "조립"), ('href="#cables"', "케이블"), ('href="#done"', "완성"), ('href="#mission-1"', "움직여 보기")]
+    positions = [bar.index(href) for href, _ in links]
+    assert positions == sorted(positions) and all(word in bar for _, word in links)
+    assert 'class="toc' in bar and "목차" in bar
+    assert 'class="progress"' not in html
+
+
+def test_section_bar_leaves_out_missing_parts():
+    bar = manual_html(VIEW, assets="./")
+    bar = bar[bar.index('<nav class="chapters"'):]
+    bar = bar[:bar.index("</nav>")]
+    assert "#cables" not in bar and "움직여 보기" not in bar and 'href="#step-1"' in bar
+
+
+def test_cards_name_their_section():
+    html = manual_html(VIEW_ALL, assets="./")
+    for card_id, chapter in (("step-1", "build"), ("step-2", "build"), ("cables", "cables"), ("done", "done"),
+                             ("mission-2", "play")):
+        start = html.index(f'id="{card_id}"')
+        assert f'data-chapter="{chapter}"' in html[html.rindex("<section", 0, start):start + 40], card_id
+
+
+def test_contents_has_a_tile_for_every_card():
+    html = manual_html(VIEW_ALL, assets="./")
+    dialog = html[html.index('<dialog class="contents"'):html.index("</dialog>")]
+    for card_id in ("cover", "step-1", "cables", "step-2", "done", "mission-1", "mission-2"):
+        assert f'href="#{card_id}"' in dialog, card_id
+    assert 'src="img/s0-02.png"' in dialog and "닫기" in dialog
+    assert dialog.count('class="play-mark') == 2
+
+
+def test_section_bar_shows_the_brand_mark_linking_home():
+    html = manual_html(VIEW_ALL, assets="../../assets/", brand="../../brand/")
+    bar = html[html.index('<nav class="chapters"'):html.index("</nav>")]
+    assert 'href="../" aria-label="처음으로"' in bar and 'src="../../brand/brick-steps-mark.svg"' in bar
+    assert "brick-steps-mark" not in manual_html(VIEW_ALL, assets="./")
+
+
+def test_print_has_no_section_bar_or_contents():
+    html = manual_html(VIEW_ALL, assets="./", brand="../brand/", print_mode=True)
+    assert 'class="chapters"' not in html and "<dialog" not in html
+
+
+def test_cover_shows_the_model_version_and_done_names_the_maker():
+    view = ManualView("t", "탱크 1호", 1, "h.png", [StepView(1, "a.png")], version=3)
+    html = manual_html(view, assets="./")
+    assert "버전 3" in _card(html, "cover") and "만든 사람 Luke Lee" in _card(html, "done")
+    assert "버전" not in _card(manual_html(ManualView("t", "t", 1, "h.png", [StepView(1, "a.png")]), assets="./"), "cover")
+
+
+def test_gallery_and_lab_footer_show_site_version_and_maker():
+    for html in (gallery_html([], version="0.0.1"), gallery_html([], lab=True, version="0.0.1")):
+        foot = html[html.index("<footer"):html.index("</footer>")]
+        assert "Brick Steps 0.0.1" in foot and "만든 사람 Luke Lee" in foot
