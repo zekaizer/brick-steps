@@ -104,3 +104,5 @@ def test_service_worker_drops_caches_of_older_builds():
     sw = (ROOT / "src" / "lego_creator" / "site_assets" / "sw.js").read_text(encoding="utf-8")
     assert 'const CACHE = "brick-steps";' in sw
     assert "caches.keys()" in sw and "caches.delete" in sw
+    # Fonts and pinned three.js live in a cache no deploy deletes, so an update does not reload them.
+    assert 'const STATIC = "brick-steps-static";' in sw and "n !== STATIC" in sw

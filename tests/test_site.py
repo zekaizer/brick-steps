@@ -98,6 +98,12 @@ def test_draft_manual_says_it_is_untested_and_hides_from_search():
     assert "noindex" not in plain and "아직 만들어 보지 않은" not in plain
 
 
+def test_fonts_never_swap_in_after_the_page_is_shown():
+    from lego_creator.site import FONTS
+
+    assert "display=optional" in FONTS and "display=swap" not in FONTS
+
+
 def test_pages_load_brand_fonts_and_favicons():
     html = manual_html(VIEW, assets="../assets/", sw="../sw.js", manifest="../manifest.webmanifest")
     assert "family=Lexend" in html and "Jua" not in html

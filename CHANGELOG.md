@@ -30,6 +30,7 @@ All notable changes to this project are recorded here. The format follows
 - The repository is now github.com/zekaizer/brick-steps, and the manuals are served at https://zekaizer.github.io/brick-steps/. The old lego-creator Pages address no longer works.
 
 ### Fixed
+- The first screen after an update no longer starts large and then shrinks: fonts stay cached across updates, and a font that is not ready when the page appears is not swapped in mid-view.
 - After an update, a manual opened before could show its old page with the new styles, which broke the layout. The site now loads pages, styles and scripts from the network first and uses the offline copy only when the network is missing or slow.
 - Tapping twice quickly on an iPad no longer zooms the page.
 - `lc new --name` with a Korean name now writes the name as readable text in `model.yaml`.
