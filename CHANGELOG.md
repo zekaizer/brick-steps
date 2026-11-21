@@ -20,6 +20,7 @@ All notable changes to this project are recorded here. The format follows
 - A hidden lab at `/lab/` shows models that are still drafts, marked as untested. Tap the gallery logo five times to open it.
 
 ### Changed
+- Each deploy starts a fresh offline cache and removes the old one, and an open page reloads once when the new version takes over. Manuals opened before an update have to be opened again to be read offline.
 - 탱크 1호 builds its turret head (cross block and barrels) as a small sub-assembly before setting it on the pin.
 - The home page and the lab are an adventure map instead of a list: a road per series with a stop per model, a 곧 나와요 stop at the end, and dotted lines to the model another series grew from. Tapping a stop opens a sheet with the story and a start button. Stops reached to the finished screen on this device show ✓ 다 만들었어요, which a small two-tap link in the sheet can clear (the model itself stays), and the first unbuilt stop says 다음은 여기!
 - Manuals fit one card on the iPad mini screen without scrolling, in portrait and in landscape. In landscape the step number, parts and buttons sit in a panel beside a larger picture, and the gallery shows three models per row.
@@ -29,6 +30,7 @@ All notable changes to this project are recorded here. The format follows
 - The repository is now github.com/zekaizer/brick-steps, and the manuals are served at https://zekaizer.github.io/brick-steps/. The old lego-creator Pages address no longer works.
 
 ### Fixed
+- After an update, a manual opened before could show its old page with the new styles, which broke the layout. The site now loads pages, styles and scripts from the network first and uses the offline copy only when the network is missing or slow.
 - Tapping twice quickly on an iPad no longer zooms the page.
 - `lc new --name` with a Korean name now writes the name as readable text in `model.yaml`.
 - The GitHub Pages build no longer fails in its container: git now trusts the checkout, so the site deploys.
