@@ -209,7 +209,7 @@ VIEW_CABLES = ManualView(
     main_sub="main.ldr",
     cables=CableView(after=1, sub="main.ldr", shown=2, image="img/s0-01.png",
                      items=[CableItem("A", "왼쪽 큰 모터", "parts/54675-322.png"), CableItem("B", "오른쪽 큰 모터", "parts/54675-322.png")],
-                     lines='[{"port": "A", "from": [1, 2, 3], "to": [4, 5, 6]}]'),
+                     lines='[{"port": "A", "from": [1, 2, 3], "to": [4, 5, 6]}]', keep="[0, 1]"),
 )
 
 
@@ -218,9 +218,10 @@ def test_manual_html_puts_the_cable_card_right_after_its_step():
     assert html.index('id="step-1"') < html.index('id="cables"') < html.index('id="step-2"')
     card = html[html.index('id="cables"'):html.index('id="step-2"')]
     assert "케이블을 꽂아요" in card and "왼쪽 큰 모터" in card and "오른쪽 큰 모터" in card
-    assert '<span class="port t-heading">A</span>' in card and 'src="parts/54675-322.png"' in card
+    assert '<span class="port port-a t-heading">A</span>' in card and 'src="parts/54675-322.png"' in card
+    assert '<span class="port port-b t-heading">B</span>' in card
     assert 'data-sub="main.ldr" data-shown="2" data-fresh="0"' in card
-    assert "data-cables=" in card and "&quot;port&quot;: &quot;A&quot;" in card
+    assert "data-cables=" in card and "&quot;port&quot;: &quot;A&quot;" in card and 'data-keep="[0, 1]"' in card
 
 
 def test_cable_card_in_print_has_no_3d_hooks():

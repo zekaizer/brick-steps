@@ -159,8 +159,9 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
                 cable_view = CableView(
                     steps[-1].number, cables.submodel, cables.shown, steps[-1].image,
                     [CableItem(c.port, c.label, thumbs_href + thumbs[(c.part, c.color)].name) for c in cables.cables],
-                    json.dumps([{"port": c.port, "from": c.device_point, "to": c.hub_point, "out": c.hub_out}
-                                for c in cables.cables]),
+                    keep=json.dumps(cables.keep),
+                    lines=json.dumps([{"port": c.port, "from": c.device_point, "to": c.hub_point, "out": c.hub_out}
+                                      for c in cables.cables]),
                 )
 
     hero = out_dir / "img" / "hero.png"

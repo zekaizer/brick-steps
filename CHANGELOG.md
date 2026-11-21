@@ -13,7 +13,7 @@ All notable changes to this project are recorded here. The format follows
 - `lc validate` also checks a model's catalog fields and its missions.
 - After the finished model, manuals show "움직여 보기" mission cards: SPIKE App word blocks drawn in their palette colors, with a question that invites one change. The cover shows the model's one-line story.
 - Mission blocks look like the SPIKE App's: as wide as their words, joined by notches, a hat on event blocks, C-shaped repeat blocks, white number inputs and darker dropdowns.
-- A "케이블을 꽂아요" card right after the hub and its motors are placed. It lists each port letter with the device to plug in, and in 3D draws a line from each device to its port with the port letter beside it.
+- A "케이블을 꽂아요" card right after the hub and its motors are placed. It lists each port letter with the device to plug in, and in 3D draws each cable as a flat ribbon in its port's color, from the device around the hub into a real-size plug, with the port letter beside it. The cables slide into their ports when the card opens, and other parts fade so the cables stay in sight.
 - A hidden lab at `/lab/` shows models that are still drafts, marked as untested. Tap the gallery logo five times to open it.
 
 ### Changed

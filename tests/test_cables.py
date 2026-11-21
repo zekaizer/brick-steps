@@ -21,6 +21,7 @@ MODEL = f"""0 FILE main.ldr
 def test_cable_plan_puts_cables_in_after_the_hub_and_devices_are_placed():
     plan = cable_plan(parse(MODEL))
     assert plan.submodel == "main.ldr" and plan.after_step == 2 and plan.shown == 4
+    assert plan.keep == [1, 2, 3]  # the motors and the hub stay solid; everything else fades
     assert [(c.port, c.part, c.label) for c in plan.cables] == [("A", "54675", "왼쪽 큰 모터"), ("B", "54675", "오른쪽 큰 모터")]
 
 

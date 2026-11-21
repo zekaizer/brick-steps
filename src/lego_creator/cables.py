@@ -48,6 +48,7 @@ class CablePlan:
     after_step: int  # 0-based build step of `submodel` after which the cables go in
     shown: int  # references of `submodel` visible at that step
     cables: list[Cable] = field(default_factory=list)
+    keep: list[int] = field(default_factory=list)  # indices into the submodel's references that stay solid
 
 
 def _turn(ref: PartRef, v: Point) -> Point:
@@ -86,6 +87,7 @@ def cable_plan(doc: Document) -> CablePlan | None:
             placed.setdefault(part_id(ref.name), []).append(ref)
         hub = next((r for r in sub.refs if part_id(r.name) in HUB_PARTS), None)
         used, cables, last = {}, [], hub.step if hub else 0
+        keep = {sub.refs.index(hub)} if hub else set()
         for a in mine:
             k = used.get(a.part, 0)
             used[a.part] = k + 1
@@ -94,6 +96,7 @@ def cable_plan(doc: Document) -> CablePlan | None:
                 continue  # lc validate reports port-device-missing
             ref = refs[k]
             last = max(last, ref.step)
+            keep.add(next(i for i, r in enumerate(sub.refs) if r is ref))
             cables.append(Cable(
                 a.port, a.part, ref.color, LABELS.get(DEVICES.get(a.part, ""), a.part),
                 _place(ref, CABLE_EXIT.get(a.part, (0, 0, 0))),
@@ -101,5 +104,5 @@ def cable_plan(doc: Document) -> CablePlan | None:
                 _turn(hub, (-1 if a.port in "ACE" else 1, 0, 0)) if hub else None,
             ))
         if cables:
-            return CablePlan(sub.name, last, sum(r.step <= last for r in sub.refs), _sided(cables))
+            return CablePlan(sub.name, last, sum(r.step <= last for r in sub.refs), _sided(cables), sorted(keep))
     return None

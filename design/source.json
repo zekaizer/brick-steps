@@ -1,7 +1,7 @@
 {
   "source": "Brick Steps design system (private claude.ai artifact; link in CLAUDE.local.md)",
   "file": "project/tokens.json",
-  "version": "1795284819-ae0a",
+  "version": "1795285328-e39c",
   "synced": "2026-11-22",
   "note": "Synced copy of the Brick Steps design system tokens. Do not edit here: change the artifact, then re-sync.",
   "brand": "design/brand/: logo SVGs from the artifact's Logos asset group; PNG icons rendered from brick-steps-icon*.svg and brick-steps-mark-small.svg"
