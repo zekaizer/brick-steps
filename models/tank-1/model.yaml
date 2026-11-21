@@ -6,7 +6,7 @@ kits:
   45681-1: 1
   tank-tracks: 1
 status: draft
-version: 2
+version: 3
 created: '2026-11-22'
 revisions:
 - version: 1
@@ -15,5 +15,8 @@ revisions:
 - version: 2
   date: '2026-11-22'
   note: Replace the Pybricks program with SPIKE App block missions
+- version: 3
+  date: '2026-11-22'
+  note: Place the left motor first so port A pairs with it, and add the cable step
 story:
   intro: 탱크 1호는 울퉁불퉁한 길도 잘 가요.

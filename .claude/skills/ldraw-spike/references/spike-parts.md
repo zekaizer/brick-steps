@@ -25,6 +25,10 @@ Body: X -50..50, Y -30..30, Z -30..150. The output boss is the only part that re
 - Holes along Z on the end faces at (±40, 0, -30) and (±40, 0, 150).
 - Lying on its side with the output outward: Rz+90 for the right motor (output towards +X), Rz-90 for the left. Two motors placed at x ±40 leave a 20 LDU gap for a beam between them.
 
+### Hub `45601c01` ports (measured, letters from a real hub)
+
+USB and the Bluetooth button are at +Z, the Bluetooth button on +X. The six port sockets face out of the long sides at x ±70, y -68, z 40/0/-40. A/C/E are on -X and B/D/F on +X, A and B at the +Z end: with the Bluetooth end up, the left side reads A, C, E from the top. `src/lego_creator/cables.py` holds these points. The large motor's cable leaves the housing at (0, 14, 150).
+
 ### Hub `45601c01` holes (measured)
 
 Bottom center origin. Vertical holes on the bottom face (y 0) at (±60, ±100), (±20, ±100) and (±60, ±60); on the top face at (±60, -80, ±100). Holes along Z on both ends at x ±40, y -10, -30, -50. Holes along X on the sides at (±70, -50, ±80).

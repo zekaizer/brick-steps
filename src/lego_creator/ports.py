@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .ldraw import Document, part_id
 from .report import Issue
@@ -26,6 +26,7 @@ class PortAssignment:
     port: str
     part: str
     role: str
+    submodel: str = field(default="", compare=False)
 
 
 def parse_ports(doc: Document) -> tuple[list[PortAssignment], list[Issue]]:
@@ -40,7 +41,7 @@ def parse_ports(doc: Document) -> tuple[list[PortAssignment], list[Issue]]:
                     Issue("error", "port-malformed", f"{sub.name}: expected '0 !LC PORT <A-F> <part> <role>', got '0 {' '.join(meta)}'")
                 )
                 continue
-            assignments.append(PortAssignment(meta[2].upper(), part_id(meta[3]), meta[4]))
+            assignments.append(PortAssignment(meta[2].upper(), part_id(meta[3]), meta[4], sub.name))
     return assignments, issues
 
 

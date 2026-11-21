@@ -85,6 +85,12 @@ h1, p, figure { margin: 0; }
 .slot.menu { background: color-mix(in srgb, var(--block-bg) 45%, var(--ink)); color: var(--surface); }
 .try { background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); }
 
+/* Cable card: which device goes into which hub port */
+.cable-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.cable-list li { display: flex; align-items: center; gap: var(--space-4); }
+.cable-list img { width: var(--thumb); height: var(--thumb); border-radius: var(--radius-sm); background: var(--paper); }
+.port { display: inline-grid; place-items: center; width: calc(var(--space-10) + var(--space-2)); aspect-ratio: 1; border-radius: var(--radius-pill); background: var(--ink); color: var(--surface); }
+
 /* Hidden lab of drafts */
 .wip-chip { justify-self: start; background: var(--ink); color: var(--surface); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
 .draft-note { background: var(--ink); color: var(--surface); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); justify-self: stretch; text-align: start; }
