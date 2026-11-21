@@ -1,4 +1,4 @@
-// Brick Steps: one card per screen, buttons + swipe + arrow keys, section bar + contents jumps,
+// Brick Steps: one card per screen, buttons + arrow keys, section bar + contents jumps (no swipe: it fired by mistake),
 // resume via hash, offline via service worker.
 (function () {
   "use strict";
@@ -215,18 +215,6 @@
   window.addEventListener("hashchange", function () {
     var k = indexOf(location.hash.slice(1));
     if (k >= 0 && k !== current) show(k, 0);
-  });
-
-  var startX = null;
-  deck.addEventListener("touchstart", function (e) {
-    // A drag on the 3D view turns the model; it must not also turn the page.
-    startX = e.target.closest(".stage3d") ? null : e.touches[0].clientX;
-  }, { passive: true });
-  deck.addEventListener("touchend", function (e) {
-    if (startX === null) return;
-    var dx = e.changedTouches[0].clientX - startX;
-    startX = null;
-    if (Math.abs(dx) > 60) (dx < 0 ? forward : back)();
   });
 
   var saved = null;

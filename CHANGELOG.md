@@ -21,6 +21,7 @@ All notable changes to this project are recorded here. The format follows
 - A hidden lab at `/lab/` shows models that are still drafts, marked as untested. Tap the gallery logo five times to open it.
 
 ### Changed
+- Steps no longer change by swiping, which fired when a finger slipped; the buttons, section bar and contents move between them.
 - Touch is calmer for children on an iPad: double-tap never zooms on any page, holding a finger does not select text or open an image menu, the page does not rubber-band, pressed buttons shrink slightly instead of flashing grey, and tapping beside the map sheet closes it.
 - Larger text for what children read: the step total sits next to the step number, sub-assembly names, hints and mission numbers use body size or more, and 완성! is bigger. Part pictures are larger with the count on their corner, the lab's back link is a button, the map's title moved under the logo, an empty home page says the first model is on its way, and in landscape mission blocks sit in the middle.
 - Each deploy starts a fresh offline cache and removes the old one, and an open page reloads once when the new version takes over. Manuals opened before an update have to be opened again to be read offline.
