@@ -23,6 +23,7 @@ MODEL = """0 FILE main.ldr
 0 NOFILE
 0 FILE board.ldr
 0 Board Pack
+0 !LC PORT A lms-esp32v2 board
 1 16 0 0 0 1 0 0 0 1 0 0 0 1 lms-esp32v2.dat
 0 STEP
 1 71 40 -14 60 1 0 0 0 1 0 0 0 1 3713.dat
@@ -69,6 +70,7 @@ def test_build_site_end_to_end(tmp_path):
         assert (out / "bot" / src).resolve().is_file(), src
     assert (out / "bot" / "manual.pdf").read_bytes()[:4] == b"%PDF"
     assert 'data-sub="board.ldr" data-shown="3" data-fresh="2"' in page
+    assert page.index('id="step-1"') < page.index('id="cables"') < page.index('id="step-2"') and "보드" in page
     assert "보드를 지켜요." in page and 'id="mission-1"' in page and 'data-block="wait"' in page
     packed = (out / "bot" / "model3d.txt").read_text(encoding="utf-8")
     for name in ("main.ldr", "board.ldr", "64179.dat", "lms-esp32v2.dat"):

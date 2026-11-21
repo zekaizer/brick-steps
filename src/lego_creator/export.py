@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -11,6 +12,7 @@ from pathlib import Path
 
 import yaml
 
+from .cables import cable_plan
 from .design import tokens_css
 from .instructions import build_mpd, plan
 from .ldraw import Library, flatten, parse, step_groups
@@ -18,6 +20,8 @@ from .missions import blocks_html, parse_missions
 from .pack3d import pack_model
 from .render import render_image, render_steps
 from .site import (
+    CableItem,
+    CableView,
     GalleryCard,
     ManualView,
     MissionView,
@@ -124,8 +128,10 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
             background=env.color("paper"), highlight=env.color("yellow"),
         ))
 
+    cables = cable_plan(doc)
     thumbs = _render_thumbs(
-        {(i.part, i.color) for s in sections for st in s.steps for i in st.items if not i.is_submodel}, thumbs_dir, env
+        {(i.part, i.color) for s in sections for st in s.steps for i in st.items if not i.is_submodel}
+        | {(c.part, c.color) for c in (cables.cables if cables else [])}, thumbs_dir, env
     )
     final_of = {s.submodel: section_images[k][max(section_images[k])] for k, s in enumerate(sections) if section_images[k]}
     title_of = {s.submodel: s.title for s in sections}
@@ -134,6 +140,7 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
         return p.relative_to(out_dir).as_posix()
 
     steps: list[StepView] = []
+    cable_view: CableView | None = None
     main = doc.main.name
     for k, section in enumerate(sections):
         shown = 0
@@ -148,13 +155,20 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
             steps.append(StepView(len(steps) + 1, rel(section_images[k][st.number]), tray,
                                   None if section.submodel == main else section.title,
                                   sub=section.submodel, shown=shown, fresh=fresh))
+            if cables and section.submodel == cables.submodel and st.number == cables.after_step + 1:
+                cable_view = CableView(
+                    steps[-1].number, cables.submodel, cables.shown, steps[-1].image,
+                    [CableItem(c.port, c.label, thumbs_href + thumbs[(c.part, c.color)].name) for c in cables.cables],
+                    json.dumps([{"port": c.port, "from": c.device_point, "to": c.hub_point, "out": c.hub_out}
+                                for c in cables.cables]),
+                )
 
     hero = out_dir / "img" / "hero.png"
     shutil.copyfile(final_of[main], hero)
     (out_dir / MODEL_3D).write_text(pack_model(mpd_text, main, [env.ldraw, env.custom]), encoding="utf-8")
     view = ManualView(slug, name, sum(flatten(doc).values()), rel(hero), steps, "manual.pdf" if pdf else None,
                       model3d=MODEL_3D, main_sub=main, done_shown=len(doc.main.refs), intro=intro,
-                      missions=missions or [], draft=draft)
+                      missions=missions or [], draft=draft, cables=cable_view)
     (out_dir / "index.html").write_text(
         manual_html(view, assets=assets_href, sw=sw_href, manifest=manifest_href), encoding="utf-8"
     )

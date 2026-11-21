@@ -53,7 +53,7 @@ function start(packed) {
   const outline = new LineMaterial({ color: yellow, linewidth: 2 });
   const glow = new Map();
   const sections = new Map();
-  let section = null, drop = null, queued = false, shownCard = null;
+  let section = null, drop = null, queued = false, shownCard = null, cableGroup = null;
 
   function draw() {
     if (queued) return;
@@ -150,9 +150,66 @@ function start(packed) {
     draw();
   }
 
+  // A round port letter that always faces the camera, like the letters printed on the hub.
+  function portLabel(text) {
+    const c = document.createElement("canvas");
+    c.width = c.height = 128;
+    const g = c.getContext("2d");
+    g.fillStyle = token("--ink");
+    g.beginPath();
+    g.arc(64, 64, 60, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = token("--surface");
+    g.font = "600 80px Lexend, sans-serif";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText(text, 64, 70);
+    const map = new THREE.CanvasTexture(c);
+    map.colorSpace = THREE.SRGBColorSpace;
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map, depthTest: false }));
+    sprite.scale.set(30, 30, 1);
+    sprite.renderOrder = 10;
+    return sprite;
+  }
+
+  function clearCables() {
+    if (!cableGroup) return;
+    cableGroup.removeFromParent();
+    cableGroup.traverse((o) => {
+      o.geometry?.dispose();
+      o.material?.map?.dispose();
+      o.material?.dispose();
+    });
+    cableGroup = null;
+  }
+
+  // Cables in LDraw units, from each device to its hub port: an arc over the model that ends
+  // straight into the port. Drawn in ink, like the real black cables and the port letters, because
+  // yellow would vanish on the yellow hub. Not the real cable route.
+  function drawCables(list) {
+    cableGroup = new THREE.Group();
+    const material = new THREE.MeshStandardMaterial({ color: token("--ink"), roughness: 0.6 });
+    for (const c of list) {
+      if (!c.to) continue;
+      const from = new THREE.Vector3(...c.from), to = new THREE.Vector3(...c.to);
+      const out = new THREE.Vector3(...c.out);
+      const lift = Math.min(from.y, to.y) - 40; // LDraw -Y is up
+      const mid = from.clone().lerp(to, 0.5).setY(lift);
+      const curve = new THREE.CatmullRomCurve3([from, mid, to.clone().addScaledVector(out, 30), to]);
+      cableGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 4, 8), material));
+      const label = portLabel(c.port);
+      label.position.copy(to).addScaledVector(out, 45);
+      cableGroup.add(label);
+    }
+    section.root.add(cableGroup);
+  }
+
   function apply(figure, animate) {
     const shown = Number(figure.dataset.shown), fresh = Number(figure.dataset.fresh);
     drop = null;
+    clearCables();
+    const cables = figure.dataset.cables ? JSON.parse(figure.dataset.cables) : null;
+    if (cables) drawCables(cables);
     section.parts.forEach((p, i) => {
       p.group.position.copy(p.base);
       p.group.visible = i < shown;
@@ -161,7 +218,7 @@ function start(packed) {
     if (fresh && animate && !calm) {
       drop = { parts: section.parts.slice(shown - fresh, shown), t0: null, height: section.ball.radius * 0.9 };
     }
-    controls.autoRotate = !fresh && !calm; // the finished model turns until touched
+    controls.autoRotate = !fresh && !cables && !calm; // the finished model turns until touched
     replay.hidden = !fresh || calm;
     draw();
   }

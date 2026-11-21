@@ -27,6 +27,23 @@ class StepView:
 
 
 @dataclass(frozen=True)
+class CableItem:
+    port: str
+    label: str
+    image: str
+
+
+@dataclass(frozen=True)
+class CableView:
+    after: int  # StepView number the card follows
+    sub: str
+    shown: int
+    image: str  # picture when there is no 3D view
+    items: list[CableItem] = field(default_factory=list)
+    lines: str = "[]"  # JSON for the 3D view: [{port, from, to | null, out | null}] as [x, y, z] in LDraw units
+
+
+@dataclass(frozen=True)
 class MissionView:
     title: str
     goal: str
@@ -46,6 +63,7 @@ class ManualView:
     main_sub: str | None = None
     done_shown: int = 0
     draft: bool = False
+    cables: CableView | None = None
     intro: str | None = None
     missions: list[MissionView] = field(default_factory=list)
 
@@ -111,6 +129,23 @@ def _tray(items: list[TrayItem]) -> str:
     )
 
 
+def _cable_card(c: CableView, hooks: str, with_3d: bool) -> str:
+    items = "".join(
+        f'<li><span class="port t-heading">{_e(it.port)}</span>'
+        f'<img src="{_e(it.image)}" alt="" loading="lazy"><span class="t-body">{_e(it.label)}</span></li>'
+        for it in c.items
+    )
+    lines = f' data-cables="{_e(c.lines)}"' if with_3d and hooks else ""
+    return (
+        '<section class="card cable" id="cables">'
+        '<h2 class="t-heading">케이블을 꽂아요</h2>'
+        '<p class="t-body">같은 글자가 적힌 포트에 꽂아요.</p>'
+        f'<ul class="cable-list">{items}</ul>'
+        f'<figure class="step-img"{hooks}{lines}><img src="{_e(c.image)}" alt="케이블을 꽂는 모습" loading="lazy"></figure>'
+        "</section>"
+    )
+
+
 def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifest: str | None = None,
                 print_mode: bool = False) -> str:
     """One page holding every step as a card; manual.js shows one card at a time.
@@ -150,6 +185,8 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
             f'<figure class="step-img"{hooks(step.sub, step.shown, step.fresh)}><img src="{_e(step.image)}" alt="{step.number}단계 조립 모습" loading="lazy"></figure>'
             "</section>"
         )
+        if view.cables and view.cables.after == step.number:
+            cards.append(_cable_card(view.cables, hooks(view.cables.sub, view.cables.shown, 0), with_3d))
     cards.append(
         '<section class="card done" id="done">'
         '<p class="badge t-heading">완성!</p>'

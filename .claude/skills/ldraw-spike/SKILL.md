@@ -93,6 +93,8 @@ Declare ports in the `.mpd` with one line per device, written in the submodel th
 0 !LC PORT A 54675c01 drive_left
 ```
 
+The n-th `PORT` line naming a part belongs to the n-th placement of that part in the same submodel, in file order, so write the port lines and place the devices in the same order. The manual's cable card uses this pairing, and names two identical devices by side: +X is the model's right, so keep the model's front towards -Z.
+
 Rules: ports go from A to F, each port is used once, the part must be a hub device, and the model must contain at least as many of that device as it has assignments. A device without a port is reported as a warning. The `role` (snake_case) documents what the device does; missions use the port letter in their blocks, and `lc validate` checks that every port a mission uses is declared here.
 
 ## Instruction structure

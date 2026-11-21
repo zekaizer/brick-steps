@@ -3,6 +3,8 @@ import json
 from lego_creator.site import (
     GalleryCard,
     ManualView,
+    CableItem,
+    CableView,
     MissionView,
     StepView,
     TrayItem,
@@ -195,3 +197,33 @@ def test_site_css_stops_double_tap_zoom():
 
     css = (Path(__file__).resolve().parents[1] / "src" / "lego_creator" / "site_assets" / "components.css").read_text()
     assert "touch-action: manipulation" in css
+
+
+VIEW_CABLES = ManualView(
+    slug="tank-1",
+    name="탱크 1호",
+    part_count=10,
+    hero="img/hero.png",
+    steps=[StepView(1, "img/s0-01.png", sub="main.ldr", shown=2, fresh=2), StepView(2, "img/s0-02.png", sub="main.ldr", shown=3, fresh=1)],
+    model3d="model3d.txt",
+    main_sub="main.ldr",
+    cables=CableView(after=1, sub="main.ldr", shown=2, image="img/s0-01.png",
+                     items=[CableItem("A", "왼쪽 큰 모터", "parts/54675-322.png"), CableItem("B", "오른쪽 큰 모터", "parts/54675-322.png")],
+                     lines='[{"port": "A", "from": [1, 2, 3], "to": [4, 5, 6]}]'),
+)
+
+
+def test_manual_html_puts_the_cable_card_right_after_its_step():
+    html = manual_html(VIEW_CABLES, assets="../assets/")
+    assert html.index('id="step-1"') < html.index('id="cables"') < html.index('id="step-2"')
+    card = html[html.index('id="cables"'):html.index('id="step-2"')]
+    assert "케이블을 꽂아요" in card and "왼쪽 큰 모터" in card and "오른쪽 큰 모터" in card
+    assert '<span class="port t-heading">A</span>' in card and 'src="parts/54675-322.png"' in card
+    assert 'data-sub="main.ldr" data-shown="2" data-fresh="0"' in card
+    assert "data-cables=" in card and "&quot;port&quot;: &quot;A&quot;" in card
+
+
+def test_cable_card_in_print_has_no_3d_hooks():
+    html = manual_html(VIEW_CABLES, assets="./", print_mode=True)
+    card = html[html.index('id="cables"'):html.index('id="step-2"')]
+    assert "케이블을 꽂아요" in card and "data-cables" not in card
