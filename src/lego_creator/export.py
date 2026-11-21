@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import importlib.metadata
 import json
 import os
@@ -193,6 +194,18 @@ def _brand(root: Path, out: Path) -> None:
         shutil.copyfile(src / name, out / dest)
 
 
+def stamp_service_worker(sw: str, site: Path) -> str:
+    """sw.js with its cache named after every file of the built site, so each deploy starts a new cache.
+
+    A changed sw.js makes browsers install the new worker, which deletes the caches of older builds.
+    """
+    digest = hashlib.sha256()
+    for path in sorted(p for p in site.rglob("*") if p.is_file() and p.name != "sw.js"):
+        digest.update(path.relative_to(site).as_posix().encode())
+        digest.update(path.read_bytes())
+    return sw.replace('const CACHE = "brick-steps";', f'const CACHE = "brick-steps-{digest.hexdigest()[:12]}";', 1)
+
+
 def build_site(root: Path, out: Path, env: ExportEnv, *, pdf: bool) -> tuple[list[GalleryCard], list[GalleryCard]]:
     """Gallery + one manual per ready model under out/, and every other model in the hidden lab under out/lab/.
 
@@ -200,7 +213,6 @@ def build_site(root: Path, out: Path, env: ExportEnv, *, pdf: bool) -> tuple[lis
     """
     out.mkdir(parents=True, exist_ok=True)
     write_assets(out / "assets", env.tokens)
-    shutil.copyfile(ASSETS / "sw.js", out / "sw.js")
     (out / "manifest.webmanifest").write_text(web_manifest(env.color("paper")), encoding="utf-8")
     (out / ".nojekyll").write_text("", encoding="utf-8")
     _brand(root, out)
@@ -228,4 +240,5 @@ def build_site(root: Path, out: Path, env: ExportEnv, *, pdf: bool) -> tuple[lis
     (out / "index.html").write_text(gallery_html(cards, version=site_version), encoding="utf-8")
     (out / "lab").mkdir(exist_ok=True)
     (out / "lab" / "index.html").write_text(gallery_html(lab, lab=True, version=site_version), encoding="utf-8")
+    (out / "sw.js").write_text(stamp_service_worker((ASSETS / "sw.js").read_text(encoding="utf-8"), out), encoding="utf-8")
     return cards, lab

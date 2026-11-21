@@ -82,3 +82,25 @@ def test_build_site_end_to_end(tmp_path):
     packed = (out / "bot" / "model3d.txt").read_text(encoding="utf-8")
     for name in ("main.ldr", "board.ldr", "64179.dat", "lms-esp32v2.dat"):
         assert f"0 FILE {name}\n" in packed, name
+
+
+def test_service_worker_cache_is_named_after_the_build(tmp_path):
+    import re
+
+    from lego_creator.export import stamp_service_worker
+
+    (tmp_path / "index.html").write_text("v1")
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "assets" / "site.css").write_text("a")
+    sw = 'const CACHE = "brick-steps";\n'
+    first = stamp_service_worker(sw, tmp_path)
+    assert re.fullmatch(r'const CACHE = "brick-steps-[0-9a-f]{12}";\n', first)
+    assert stamp_service_worker(sw, tmp_path) == first
+    (tmp_path / "assets" / "site.css").write_text("b")
+    assert stamp_service_worker(sw, tmp_path) != first
+
+
+def test_service_worker_drops_caches_of_older_builds():
+    sw = (ROOT / "src" / "lego_creator" / "site_assets" / "sw.js").read_text(encoding="utf-8")
+    assert 'const CACHE = "brick-steps";' in sw
+    assert "caches.keys()" in sw and "caches.delete" in sw

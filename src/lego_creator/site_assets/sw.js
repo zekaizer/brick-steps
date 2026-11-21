@@ -3,7 +3,7 @@
 // so a page and the files it was built with always come from the same deploy. Serving each file from the cache
 // on its own mixed an old page with a newer stylesheet after an update.
 // three.js (pinned version) and Google Fonts never change under the same URL: cache first.
-// One cache name for the life of the site, so manuals opened before stay readable offline after an update.
+// The build renames the cache after its files (export.stamp_service_worker); a new worker deletes older caches.
 const CACHE = "brick-steps";
 const SHELL = [
   "./", "./assets/site.css", "./assets/manual.js", "./manifest.webmanifest", "./brand/brick-steps-lockup.svg", "./favicon.svg",
@@ -24,7 +24,11 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys()
+      .then((names) => Promise.all(names.filter((n) => n.startsWith("brick-steps") && n !== CACHE).map((n) => caches.delete(n))))
+      .then(() => self.clients.claim())
+  );
 });
 
 function cacheable(request) {

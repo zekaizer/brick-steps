@@ -6,6 +6,16 @@
   function registerServiceWorker(images) {
     var sw = document.body.getAttribute("data-sw");
     if (!sw || !("serviceWorker" in navigator)) return;
+    // A new deploy's worker takes over open pages; reload once so the page matches the new files.
+    // Not on the first install, when there was no worker before.
+    if (navigator.serviceWorker.controller) {
+      var reloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (reloaded) return;
+        reloaded = true;
+        location.reload();
+      });
+    }
     var scope = sw.slice(0, sw.lastIndexOf("/") + 1) || "./";
     navigator.serviceWorker.register(sw, { scope: scope }).then(function () {
       return navigator.serviceWorker.ready;
