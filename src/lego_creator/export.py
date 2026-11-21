@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import importlib.metadata
 import json
 import os
@@ -211,12 +212,17 @@ def build_site(root: Path, out: Path, env: ExportEnv, *, pdf: bool) -> tuple[lis
         slug = meta_path.parent.name
         ready = is_published(meta)
         up = "../" if ready else "../../"
-        (cards if ready else lab).append(build_manual(
+        intro = (meta.get("story") or {}).get("intro")
+        card = build_manual(
             meta.get("name", slug), slug, (meta_path.parent / "model.mpd").read_text(encoding="utf-8"), env,
             (out if ready else out / "lab") / slug, thumbs_dir=out / "parts", thumbs_href=f"{up}parts/",
             assets_href=f"{up}assets/", sw_href=f"{up}sw.js", manifest_href=f"{up}manifest.webmanifest", pdf=pdf,
-            intro=(meta.get("story") or {}).get("intro"), missions=load_mission_views(meta_path.parent),
+            intro=intro, missions=load_mission_views(meta_path.parent),
             draft=not ready, brand_href=f"{up}brand/", version=meta.get("version"),
+        )
+        (cards if ready else lab).append(dataclasses.replace(
+            card, series=str(meta.get("series") or slug), number=int(meta.get("number") or 1), story=intro,
+            based_on=meta.get("based_on"),
         ))
     site_version = importlib.metadata.version("lego-creator")
     (out / "index.html").write_text(gallery_html(cards, version=site_version), encoding="utf-8")

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from html import escape
 
@@ -77,6 +78,10 @@ class GalleryCard:
     image: str
     part_count: int
     step_count: int
+    series: str = ""
+    number: int = 0
+    story: str | None = None
+    based_on: str | None = None
 
 
 FONTS = "https://fonts.googleapis.com/css2?family=Lexend:wght@600&family=Noto+Sans+KR:wght@400;500;700&display=swap"
@@ -284,39 +289,99 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
     return "\n".join(out)
 
 
-def gallery_html(cards: list[GalleryCard], *, lab: bool = False, version: str | None = None) -> str:
-    """The gallery of ready models, or with lab=True the hidden lab of drafts under lab/.
+def _series_label(card: GalleryCard) -> str:
+    """"탱크 1호" -> "탱크"; the road sign reads "탱크 길"."""
+    return re.sub(r"\s*\d+호$", "", card.name) or card.series
 
-    The gallery logo opens the lab after five taps (manual.js); nothing links to it.
+
+def _map(cards: list[GalleryCard]) -> str:
+    """Adventure map: a road per series, a stop per model in number order, then a 곧 나와요 stop.
+
+    Positions are percentages of the map box (one lane per series, one column per stop), so the
+    same markup fills portrait and landscape; the road SVG stretches with non-scaling strokes.
+    """
+    lanes: dict[str, list[GalleryCard]] = {}
+    for c in sorted(cards, key=lambda c: (c.series or c.slug, c.number)):
+        lanes.setdefault(c.series or c.slug, []).append(c)
+    by_slug = {c.slug: c for c in cards}
+    cols = max(len(v) for v in lanes.values()) + 1
+    point: dict[str, tuple[float, float]] = {}
+    roads, signs, stops = [], [], []
+    for i, models in enumerate(lanes.values()):
+        center = (i + 0.5) / len(lanes) * 100
+        bend = 10 / len(lanes)
+        # Columns start half a column in, leaving the road's start free for its sign.
+        pts = [((k + 1) / (cols + 0.5) * 100, center + (bend if k % 2 else -bend)) for k in range(len(models) + 1)]
+        d, prev = f"M 0 {center:.2f}", (0.0, center)
+        for x, y in pts:
+            mid = (prev[0] + x) / 2
+            d += f" C {mid:.2f} {prev[1]:.2f}, {mid:.2f} {y:.2f}, {x:.2f} {y:.2f}"
+            prev = (x, y)
+        roads.append("".join(f'<path class="{cls}" d="{d}"/>' for cls in ("road-edge", "road", "road-line")))
+        signs.append(f'<p class="sign t-heading" style="top:{center:.2f}%">{_e(_series_label(models[0]))} 길</p>')
+        for (x, y), c in zip(pts, models):
+            point[c.slug] = (x, y)
+            base = by_slug.get(c.based_on) if c.based_on else None
+            source = f' data-from="{_e(base.name)}에서 나왔어요"' if base else ""
+            stops.append(
+                f'<a class="stop" href="{_e(c.slug)}/" style="left:{x:.2f}%;top:{y:.2f}%" data-name="{_e(c.name)}" '
+                f'data-img="{_e(c.image)}" data-story="{_e(c.story or "")}" '
+                f'data-meta="부품 {c.part_count}개 · {c.step_count}단계"{source}>'
+                '<span class="here t-caption">다음은 여기!</span>'
+                f'<span class="disc"><img src="{_e(c.image)}" alt="" loading="lazy"></span>'
+                '<span class="tick t-caption">✓ 다 만들었어요</span>'
+                f'<span class="label t-heading">{_e(c.name)}</span></a>'
+            )
+        x, y = pts[-1]
+        stops.append(f'<span class="stop locked" style="left:{x:.2f}%;top:{y:.2f}%">'
+                     '<span class="disc"><span class="t-title">?</span></span>'
+                     '<span class="label t-heading">곧 나와요</span></span>')
+    branches = []
+    for c in cards:
+        base = by_slug.get(c.based_on) if c.based_on else None
+        if base and (base.series or base.slug) != (c.series or c.slug):
+            (x1, y1), (x2, y2) = point[base.slug], point[c.slug]
+            mid = (y1 + y2) / 2
+            branches.append(f'<path class="branch" d="M {x1:.2f} {y1:.2f} C {x1:.2f} {mid:.2f}, {x2:.2f} {mid:.2f}, {x2:.2f} {y2:.2f}"/>')
+    return (
+        f'<div class="map" style="--lanes:{len(lanes)};--cols:{cols}">'
+        '<svg class="roads" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
+        f'{"".join(roads)}{"".join(branches)}</svg>{"".join(signs)}{"".join(stops)}</div>'
+        '<section class="sheet" hidden aria-live="polite">'
+        '<button type="button" class="x t-title" aria-label="닫기">×</button>'
+        '<img class="sheet-img" alt="">'
+        '<div class="info"><p class="from t-caption"></p><h2 class="name t-title"></h2>'
+        '<p class="story t-body"></p><p class="meta t-caption"></p>'
+        '<a class="go t-button" href="#">만들기 시작 ›</a></div>'
+        '<button type="button" class="clear t-caption">‘다 만들었어요’ 표시 지우기</button>'
+        "</section>"
+    )
+
+
+def gallery_html(cards: list[GalleryCard], *, lab: bool = False, version: str | None = None) -> str:
+    """The home page as an adventure map of ready models, or with lab=True the hidden lab of drafts under lab/.
+
+    The home logo opens the lab after five taps (manual.js); nothing links to it.
     """
     up = "../" if lab else ""
-    chip = '<span class="wip-chip t-caption">만드는 중</span>' if lab else ""
     if cards:
-        items = "".join(
-            f'<li><a class="model-card" href="{_e(c.slug)}/">'
-            f'<img src="{_e(c.image)}" alt="" loading="lazy">{chip}'
-            f'<span class="t-title">{_e(c.name)}</span>'
-            f'<span class="t-caption">부품 {c.part_count}개 · {c.step_count}단계</span>'
-            "</a></li>"
-            for c in cards
-        )
-        body = f'<ul class="grid">{items}</ul>'
+        body = _map(cards)
     else:
         body = f'<p class="t-body empty">{"실험실이 비어 있어요." if lab else "아직 완성된 작품이 없어요."}</p>'
     if lab:
-        heading = ('<p class="t-caption"><a href="../">‹ 갤러리로</a></p><h1 class="t-title">실험실</h1>'
-                   '<p class="t-body">아직 만들어 보지 않은 설계예요.</p>')
+        heading = ('<div class="map-title"><p class="t-caption"><a href="../">‹ 갤러리로</a></p>'
+                   '<h1 class="t-title">실험실</h1><p class="t-caption">아직 만들어 보지 않은 설계예요.</p></div>')
     else:
-        heading = '<h1 class="t-title">무엇을 만들까요?</h1>'
+        heading = '<h1 class="map-title t-heading">어디로 가 볼까요?</h1>'
     return "\n".join([
         _head("Brick Steps 실험실" if lab else "Brick Steps", assets=f"{up}assets/", manifest=f"{up}manifest.webmanifest",
               print_mode=False, noindex=lab),
         f'<body class="gallery" data-sw="{up}sw.js"' + ("" if lab else ' data-lab="lab/"') + ">",
         (
-            '<main class="wrap"><header class="site-head">'
-            f'<img class="brand" src="{up}brand/brick-steps-lockup.svg" alt="Brick Steps" width="488" height="113">'
-            f'<p class="tagline t-caption">{TAGLINE}</p></header>'
-            f'{heading}{body}'
+            '<main class="map-page"><header class="site-head">'
+            f'<div class="brand-box"><img class="brand" src="{up}brand/brick-steps-lockup.svg" alt="Brick Steps" width="488" height="113">'
+            f'<p class="tagline t-caption">{TAGLINE}</p></div>'
+            f'{heading}</header>{body}'
             f'<footer class="site-foot t-caption">Brick Steps{" " + _e(version) if version else ""} · {MAKER}</footer></main>'
         ),
         f'<script src="{up}assets/manual.js" defer></script>',

@@ -52,6 +52,8 @@ def test_build_site_end_to_end(tmp_path):
 
     assert [c.slug for c in cards] == ["bot"] and [c.slug for c in lab] == ["wip"]
     assert cards[0].step_count == 4 and cards[0].part_count == 4
+    assert cards[0].story == "보드를 지켜요." and cards[0].series == "bot" and cards[0].number == 1
+    assert 'data-story="보드를 지켜요."' in (out / "index.html").read_text(encoding="utf-8")
     for rel in ("index.html", "sw.js", "manifest.webmanifest", "assets/site.css", "assets/manual.js",
                 "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "favicon.svg",
                 "favicon-32.png", "brand/brick-steps-lockup.svg", "brand/brick-steps-mark.svg", "bot/index.html", "bot/manual.pdf", "bot/img/hero.png",
