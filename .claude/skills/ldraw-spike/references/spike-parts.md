@@ -61,3 +61,10 @@ Source: product page (SKU CM0047B), read 2026-11-22. The board has no LDraw part
 - The outline and the holes are trustworthy. Every component box is a clearance envelope estimated from photos (±3 mm). The tallest part is the header, about 8.5 mm above the PCB, and the LPUP cable needs extra room above its socket.
 - Port device id is `lms-esp32v2` (kind `lms_esp32`). Its kit inventory is `inventory/lms-esp32v2.csv`.
 - Mount template: `templates/lms-esp32v2-mount.mpd`. It uses the frame, 4 axle pins 3749 (pin end in the frame) and 4 bushes 3713 clamping the board. Bush grip on the 16 LDU axle stub has not been checked on a real build.
+
+## Third-party: tank track set (`inventory/tank-tracks.csv`)
+
+Identified from photos. Exact counts are unknown; the owner reports enough for one two-track tank:
+- Tread links: use `57518` (Technic Chain Tread 5 Wide). The photos cannot tell it apart from the reinforced `88323`, and both have the same geometry. The hinge-loop side is the inner side that meshes with the sprocket.
+- Sprocket: `57519` (Technic Sprocket Wheel 40.4). It has 6 pin holes around the center axle hole, measures 102 LDU in diameter and 36 LDU wide, and its axis is along Z.
+- The same photos show the large turntable (`18938` top and `18939` base) and the quarter gear ring `24121`, but these come from 45681 and are not part of this set.
