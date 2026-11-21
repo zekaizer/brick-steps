@@ -46,6 +46,7 @@ BRAND_FILES = {
     "favicon-32.png": "favicon-32.png",
     "favicon.svg": "brick-steps-mark-small.svg",
     "brand/brick-steps-lockup.svg": "brick-steps-lockup.svg",
+    "brand/brick-steps-mark.svg": "brick-steps-mark.svg",
 }
 
 
@@ -111,7 +112,7 @@ def load_mission_views(model_dir: Path) -> list[MissionView]:
 def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: Path, *, thumbs_dir: Path,
                  thumbs_href: str, assets_href: str, sw_href: str | None, manifest_href: str | None,
                  pdf: bool, intro: str | None = None, missions: list[MissionView] | None = None,
-                 draft: bool = False) -> GalleryCard:
+                 draft: bool = False, brand_href: str | None = None) -> GalleryCard:
     """Render and write one manual into out_dir (index.html, img/, optional manual.pdf)."""
     doc = parse(mpd_text, default_name=f"{slug}.ldr")
     sections = plan(doc)
@@ -171,7 +172,7 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
                       model3d=MODEL_3D, main_sub=main, done_shown=len(doc.main.refs), intro=intro,
                       missions=missions or [], draft=draft, cables=cable_view)
     (out_dir / "index.html").write_text(
-        manual_html(view, assets=assets_href, sw=sw_href, manifest=manifest_href), encoding="utf-8"
+        manual_html(view, assets=assets_href, sw=sw_href, manifest=manifest_href, brand=brand_href), encoding="utf-8"
     )
     if pdf:
         from weasyprint import HTML  # imported lazily: needs Pango, only for export
@@ -214,7 +215,7 @@ def build_site(root: Path, out: Path, env: ExportEnv, *, pdf: bool) -> tuple[lis
             (out if ready else out / "lab") / slug, thumbs_dir=out / "parts", thumbs_href=f"{up}parts/",
             assets_href=f"{up}assets/", sw_href=f"{up}sw.js", manifest_href=f"{up}manifest.webmanifest", pdf=pdf,
             intro=(meta.get("story") or {}).get("intro"), missions=load_mission_views(meta_path.parent),
-            draft=not ready,
+            draft=not ready, brand_href=f"{up}brand/",
         ))
     (out / "index.html").write_text(gallery_html(cards), encoding="utf-8")
     (out / "lab").mkdir(exist_ok=True)

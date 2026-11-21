@@ -25,6 +25,7 @@ h1, p, figure { margin: 0; }
 .deck.js .card { display: none; }
 .deck.js .card.on { display: grid; animation: slide-in 160ms ease-out; }
 @keyframes slide-in { from { transform: translateX(var(--dir, 24px)); opacity: 0.4; } to { transform: none; opacity: 1; } }
+.deck.js .card.on.jump { animation: none; }
 @media (prefers-reduced-motion: reduce) { .deck.js .card.on { animation: none; } }
 
 .hero { width: 100%; height: auto; border-radius: var(--radius-md); background: var(--paper); display: block; }
@@ -35,7 +36,7 @@ h1, p, figure { margin: 0; }
 .side { display: grid; gap: var(--space-4); align-content: start; }
 .manual .deck.js {
   height: 100dvh; grid-template-rows: minmax(0, 1fr);
-  padding-block: calc(var(--space-4) + env(safe-area-inset-top, 0px)) calc(var(--tap-min) + 2 * var(--space-4) + env(safe-area-inset-bottom, 0px));
+  padding-block: calc(var(--tap-min) + 2 * var(--space-2) + var(--space-4) + env(safe-area-inset-top, 0px)) calc(var(--tap-min) + 2 * var(--space-4) + env(safe-area-inset-bottom, 0px));
 }
 .deck.js .card.on { display: flex; flex-direction: column; gap: var(--space-4); min-height: 0; }
 .deck.js .main { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; }
@@ -43,27 +44,54 @@ h1, p, figure { margin: 0; }
 .deck.js .main .stage3d { aspect-ratio: auto; width: 100%; height: 100%; }
 .deck.js .main img { max-height: 100%; width: auto; object-fit: contain; }
 .deck.js .mission .main { place-items: start; overflow: auto; }
-@media (orientation: landscape) and (min-width: 900px) {
-  .manual .deck.js { max-width: none; padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); }
-  .deck.js .card.on { display: grid; grid-template-columns: var(--side-panel) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-6); }
-  /* Room at the bottom of the panel for the pager, which sits there in landscape. */
-  .deck.js .side { min-height: 0; overflow: auto; padding-bottom: calc(var(--tap-min) + var(--space-4)); }
-  .deck.js .cover .side, .deck.js .done .side { align-content: center; }
-  .deck.js .main { height: 100%; }
-  .pager {
-    left: calc(2 * var(--space-4) + env(safe-area-inset-left, 0px)); right: auto;
-    bottom: calc(2 * var(--space-4) + env(safe-area-inset-bottom, 0px));
-    width: var(--side-panel); padding: 0; background: none;
-  }
-  .gallery .wrap { max-width: var(--page-wide); }
-  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* Section bar: brand mark home, the manual's parts, contents. Fixed at the top; current part outlined,
+   the build part fills with azure as steps are turned. */
+.chapters {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 2; background: var(--paper);
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) max(var(--space-4), env(safe-area-inset-right, 0px), calc(50% - var(--page-max) / 2 + var(--space-4))) var(--space-2) max(var(--space-4), env(safe-area-inset-left, 0px), calc(50% - var(--page-max) / 2 + var(--space-4)));
+}
+.chapters .home { flex: none; display: block; line-height: 0; }
+/* 48px: the full mark's smallest size (design system). */
+.chapters .home img { width: calc(var(--tap-min) - var(--space-2)); height: auto; }
+.chapter, .chapters .toc, .contents .close {
+  min-height: var(--tap-min); border-radius: var(--radius-pill); color: var(--ink); text-decoration: none; cursor: pointer;
+}
+.chapter {
+  flex: 1; min-width: 0; position: relative; overflow: hidden; display: grid; place-items: center;
+  background: var(--surface); border: 3px solid var(--surface); white-space: nowrap;
+}
+.chapter[data-chapter="build"]::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--fill, 0%); background: var(--azure); }
+.chapter span { position: relative; }
+.chapter[aria-current] { border-color: var(--azure-deep); }
+.chapters .toc, .contents .close { flex: none; padding: 0 var(--space-6); background: var(--surface); border: 3px solid var(--azure-deep); }
+
+/* Contents: a full-screen sheet with a tile per card */
+.contents {
+  position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; border: 0;
+  background: var(--paper); color: var(--ink); overflow: auto;
+  padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) max(var(--space-4), env(safe-area-inset-right, 0px)) calc(var(--space-6) + env(safe-area-inset-bottom, 0px)) max(var(--space-4), env(safe-area-inset-left, 0px));
+}
+.contents-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-6); }
+.contents h2 { margin: 0; }
+.tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+.tile {
+  position: relative; height: 100%; min-height: var(--tap-min); display: grid; align-content: start; justify-items: center; gap: var(--space-2);
+  padding: var(--space-2); background: var(--surface); border: 3px solid var(--surface); border-radius: var(--radius-md);
+  color: var(--ink); text-decoration: none; text-align: center;
+}
+.tile img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: var(--radius-sm); background: var(--paper); }
+.tile.play { align-content: center; }
+.tile[aria-current] { border-color: var(--azure-deep); }
+.tile.seen::after {
+  content: "✓"; position: absolute; top: var(--space-2); right: var(--space-2);
+  background: var(--green); color: var(--surface); border-radius: var(--radius-pill); padding: 0 var(--space-2);
 }
 
 /* Step */
 .step-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
 .step-head .t-caption { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
-.progress { height: 8px; border-radius: var(--radius-pill); background: var(--paper); overflow: hidden; }
-.progress > i { display: block; height: 100%; background: var(--azure); border-radius: inherit; }
 .sub-label { justify-self: start; background: var(--magenta); color: var(--surface); border-radius: var(--radius-pill); padding: var(--space-2) var(--space-4); }
 
 /* Parts tray */
@@ -161,3 +189,22 @@ h1, p, figure { margin: 0; }
 .print { background: var(--surface); }
 .print .wrap { max-width: none; padding: 0; display: block; }
 .print .card { break-after: page; padding: 0; }
+
+/* Landscape iPad mini (1133 x 744): last, so it overrides the portrait rules above. */
+@media (orientation: landscape) and (min-width: 900px) {
+  .manual .deck.js { max-width: none; padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); }
+  .deck.js .card.on { display: grid; grid-template-columns: var(--side-panel) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-6); }
+  /* Room at the bottom of the panel for the pager, which sits there in landscape. */
+  .deck.js .side { min-height: 0; overflow: auto; padding-bottom: calc(var(--tap-min) + var(--space-4)); }
+  .deck.js .cover .side, .deck.js .done .side { align-content: center; }
+  .deck.js .main { height: 100%; }
+  .pager {
+    left: calc(2 * var(--space-4) + env(safe-area-inset-left, 0px)); right: auto;
+    bottom: calc(2 * var(--space-4) + env(safe-area-inset-bottom, 0px));
+    width: var(--side-panel); padding: 0; background: none;
+  }
+  .chapters { padding-left: max(var(--space-4), env(safe-area-inset-left, 0px)); padding-right: max(var(--space-4), env(safe-area-inset-right, 0px)); }
+  .tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .gallery .wrap { max-width: var(--page-wide); }
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

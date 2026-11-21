@@ -148,12 +148,52 @@ def _cable_card(c: CableView, hooks: str, with_3d: bool) -> str:
         f'<ul class="cable-list">{items}</ul>'
     )
     figure = f'<figure class="step-img"{hooks}{lines}><img src="{_e(c.image)}" alt="케이블을 꽂는 모습" loading="lazy"></figure>'
-    return f'<section class="card cable" id="cables">{_split(side, figure)}</section>'
+    return f'<section class="card cable" id="cables" data-chapter="cables">{_split(side, figure)}</section>'
+
+
+def _chapters(view: ManualView, brand: str | None) -> str:
+    """Section bar fixed at the top: brand mark home, a link per part of the manual, and the contents button.
+
+    manual.js unhides it and marks the current part; without JS it stays hidden.
+    """
+    home = (f'<a class="home" href="../" aria-label="처음으로">'
+            f'<img src="{_e(brand)}brick-steps-mark.svg" alt="" width="48" height="48"></a>') if brand else ""
+    parts = [("build", "#step-1", "조립")]
+    if view.cables:
+        parts.append(("cables", "#cables", "케이블"))
+    parts.append(("done", "#done", "완성"))
+    if view.missions:
+        parts.append(("play", "#mission-1", "움직여 보기"))
+    links = "".join(f'<a class="chapter t-button" data-chapter="{c}" href="{href}"><span>{word}</span></a>'
+                    for c, href, word in parts)
+    return (f'<nav class="chapters" hidden aria-label="구간">{home}{links}'
+            '<button type="button" class="toc t-button">목차</button></nav>')
+
+
+def _contents(view: ManualView) -> str:
+    """Contents sheet: one tile per card, opened from the section bar."""
+    def tile(card_id: str, label: str, image: str | None = None, cls: str = "") -> str:
+        img = f'<img src="{_e(image)}" alt="" loading="lazy">' if image else ""
+        return f'<li><a class="tile{cls}" href="#{card_id}">{img}<span class="t-heading">{_e(label)}</span></a></li>'
+
+    tiles = [tile("cover", "처음", view.hero)]
+    for step in view.steps:
+        tiles.append(tile(f"step-{step.number}", str(step.number), step.image, " step"))
+        if view.cables and view.cables.after == step.number:
+            tiles.append(tile("cables", "케이블", view.cables.image))
+    tiles.append(tile("done", "완성", view.hero))
+    tiles += [tile(f"mission-{k}", f"움직여 보기 {k}", cls=" play") for k in range(1, len(view.missions) + 1)]
+    return (
+        '<dialog class="contents" aria-label="목차">'
+        '<div class="contents-head"><h2 class="t-title">목차</h2>'
+        '<button type="button" class="close t-button">닫기</button></div>'
+        f'<ul class="tiles">{"".join(tiles)}</ul></dialog>'
+    )
 
 
 
 def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifest: str | None = None,
-                print_mode: bool = False) -> str:
+                print_mode: bool = False, brand: str | None = None) -> str:
     """One page holding every step as a card; manual.js shows one card at a time.
 
     Without JS (and in print_mode, used for the PDF) all cards are stacked.
@@ -176,19 +216,17 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
     hero = f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}">'
     cards = [f'<section class="card cover" id="cover">{_split(cover, hero)}</section>']
     for step in view.steps:
-        pct = round(100 * step.number / total) if total else 100
         label = f'<p class="sub-label t-caption">{_e(step.section_title)}</p>' if step.section_title else ""
         side = (
             '<div class="step-head">'
             f'<span class="t-step-number">{step.number}</span>'
             f'<span class="t-caption">{step.number} / {total} 단계</span>'
             "</div>"
-            f'<div class="progress" aria-hidden="true"><i style="width:{pct}%"></i></div>'
             f"{label}{_tray(step.tray)}"
         )
         figure = (f'<figure class="step-img"{hooks(step.sub, step.shown, step.fresh)}>'
                   f'<img src="{_e(step.image)}" alt="{step.number}단계 조립 모습" loading="lazy"></figure>')
-        cards.append(f'<section class="card step" id="step-{step.number}">{_split(side, figure)}</section>')
+        cards.append(f'<section class="card step" id="step-{step.number}" data-chapter="build">{_split(side, figure)}</section>')
         if view.cables and view.cables.after == step.number:
             cards.append(_cable_card(view.cables, hooks(view.cables.sub, view.cables.shown, 0), with_3d))
     done = (
@@ -198,7 +236,7 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
     )
     figure = (f'<figure class="step-img"{hooks(view.main_sub, view.done_shown, 0)}>'
               f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}"></figure>')
-    cards.append(f'<section class="card done" id="done">{_split(done, figure)}</section>')
+    cards.append(f'<section class="card done" id="done" data-chapter="done">{_split(done, figure)}</section>')
     for k, mission in enumerate(view.missions, 1):
         side = (
             f'<p class="mission-label t-caption">움직여 보기 {k} / {len(view.missions)}</p>'
@@ -206,7 +244,7 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
             + (f'<p class="t-body">{_e(mission.goal)}</p>' if mission.goal else "")
             + (f'<p class="try t-body">{_e(mission.try_)}</p>' if mission.try_ else "")
         )
-        cards.append(f'<section class="card mission" id="mission-{k}">{_split(side, mission.blocks)}</section>')
+        cards.append(f'<section class="card mission" id="mission-{k}" data-chapter="play">{_split(side, mission.blocks)}</section>')
     if print_mode:
         body_attrs = ' class="manual print"'
     else:
@@ -220,6 +258,8 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
            f'<main class="wrap deck" id="deck">{"".join(cards)}</main>']
     if not print_mode:
         out += [
+            _chapters(view, brand),
+            _contents(view),
             (
                 '<nav class="pager" hidden><div class="pager-in">'
                 '<button type="button" class="prev t-button">‹ 이전</button>'
