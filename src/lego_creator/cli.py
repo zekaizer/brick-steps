@@ -106,7 +106,7 @@ def cmd_new(root: Path, _lib: Library, args: argparse.Namespace) -> int:
     name = args.name or args.slug.replace("-", " ").title()
     kits = _kit_counts(args.kit) if args.kit else _owned_kits(root)
     meta = {"name": name, "kits": kits, "status": "draft", "version": 1}
-    (d / "model.yaml").write_text(yaml.safe_dump(meta, sort_keys=False), encoding="utf-8")
+    (d / "model.yaml").write_text(yaml.safe_dump(meta, sort_keys=False, allow_unicode=True), encoding="utf-8")
     (d / "model.mpd").write_text(MPD_TEMPLATE.format(name=name, author=args.author), encoding="utf-8")
     (d / "spec.md").write_text(SPEC_TEMPLATE.format(name=name), encoding="utf-8")
     (d / "program" / "main.py").write_text(PROGRAM_TEMPLATE, encoding="utf-8")

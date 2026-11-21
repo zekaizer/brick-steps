@@ -31,6 +31,12 @@ def test_new_scaffolds_model_directory(tmp_path):
     assert (d / "program" / "main.py").exists()
 
 
+def test_new_writes_a_korean_name_readably(tmp_path):
+    root = setup_root(tmp_path)
+    assert run(root, "new", "tank", "--name", "탱크") == 0
+    assert "name: 탱크" in (root / "models" / "tank" / "model.yaml").read_text(encoding="utf-8")
+
+
 def test_new_refuses_existing_slug(tmp_path):
     root = setup_root(tmp_path)
     assert run(root, "new", "x") == 0
