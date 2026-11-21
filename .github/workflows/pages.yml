@@ -1,0 +1,58 @@
+# Build the Brick Steps gallery + manuals with LeoCAD and deploy to GitHub Pages (ADR 0001).
+# Repository settings: Pages -> Build and deployment -> Source: GitHub Actions.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Ubuntu 26.04 ships LeoCAD 25.09, the version the export was built and tested against.
+    container: ubuntu:26.04
+    env:
+      LDRAW_CACHE_KEY: ldraw-complete-2026-11
+    steps:
+      - name: Install LeoCAD, Xvfb, WeasyPrint libraries and Korean fonts
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates git leocad xvfb xauth libpango-1.0-0 libpangoft2-1.0-0 fonts-noto-cjk
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Cache LDraw library
+        id: ldraw
+        uses: actions/cache@v4
+        with:
+          path: ldraw
+          key: ${{ env.LDRAW_CACHE_KEY }}
+      - run: uv sync --frozen
+      - name: Fetch LDraw library
+        if: steps.ldraw.outputs.cache-hit != 'true'
+        run: uv run lc fetch-ldraw
+      - run: uv run pytest -q
+      - run: uv run lc site --out site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

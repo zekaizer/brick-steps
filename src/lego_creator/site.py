@@ -1,0 +1,191 @@
+"""Kid-facing manual pages, gallery and PWA shell (ADR 0001, Brick Steps design system)."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from html import escape
+
+
+@dataclass(frozen=True)
+class TrayItem:
+    image: str
+    qty: int
+    label: str
+    is_submodel: bool = False
+
+
+@dataclass(frozen=True)
+class StepView:
+    number: int
+    image: str
+    tray: list[TrayItem] = field(default_factory=list)
+    section_title: str | None = None
+
+
+@dataclass(frozen=True)
+class ManualView:
+    slug: str
+    name: str
+    part_count: int
+    hero: str
+    steps: list[StepView]
+    pdf: str | None = None
+
+
+@dataclass(frozen=True)
+class GalleryCard:
+    slug: str
+    name: str
+    image: str
+    part_count: int
+    step_count: int
+
+
+FONTS = "https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500&display=swap"
+
+
+def _e(text: object) -> str:
+    return escape(str(text), quote=True)
+
+
+def _head(title: str, *, assets: str, manifest: str | None, print_mode: bool) -> str:
+    parts = [
+        "<!doctype html>",
+        '<html lang="ko">',
+        "<head>",
+        '<meta charset="utf-8">',
+        '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
+        f"<title>{_e(title)}</title>",
+        f'<link rel="stylesheet" href="{FONTS}">',
+        f'<link rel="stylesheet" href="{_e(assets)}site.css">',
+    ]
+    if manifest and not print_mode:
+        icon = manifest.rsplit("/", 1)[0] + "/" if "/" in manifest else ""
+        parts += [
+            f'<link rel="manifest" href="{_e(manifest)}">',
+            '<meta name="apple-mobile-web-app-capable" content="yes">',
+            '<meta name="mobile-web-app-capable" content="yes">',
+            '<meta name="apple-mobile-web-app-title" content="Brick Steps">',
+            f'<link rel="apple-touch-icon" href="{_e(icon)}icon-180.png">',
+        ]
+    parts.append("</head>")
+    return "\n".join(parts)
+
+
+def _tray(items: list[TrayItem]) -> str:
+    if not items:
+        return ""
+    lis = []
+    for it in items:
+        cls = ' class="sub"' if it.is_submodel else ""
+        lis.append(
+            f'<li{cls}><img src="{_e(it.image)}" alt="{_e(it.label)}" loading="lazy">'
+            f'<span class="count t-count">×{it.qty}</span></li>'
+        )
+    return (
+        '<div class="tray"><p class="tray-head t-heading">필요한 부품</p>'
+        f'<ul>{"".join(lis)}</ul></div>'
+    )
+
+
+def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifest: str | None = None,
+                print_mode: bool = False) -> str:
+    """One page holding every step as a card; manual.js shows one card at a time.
+
+    Without JS (and in print_mode, used for the PDF) all cards are stacked.
+    """
+    total = len(view.steps)
+    cards = [
+        '<section class="card cover" id="cover">'
+        f'<h1 class="t-title">{_e(view.name)}</h1>'
+        f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}">'
+        f'<p class="t-body">부품 {view.part_count}개 · {total}단계</p>'
+        + (f'<p class="t-caption"><a href="{_e(view.pdf)}">PDF로 보기</a></p>' if view.pdf and not print_mode else "")
+        + "</section>"
+    ]
+    for step in view.steps:
+        pct = round(100 * step.number / total) if total else 100
+        label = f'<p class="sub-label t-caption">{_e(step.section_title)}</p>' if step.section_title else ""
+        cards.append(
+            f'<section class="card step" id="step-{step.number}">'
+            '<div class="step-head">'
+            f'<span class="t-step-number">{step.number}</span>'
+            f'<span class="t-caption">{step.number} / {total} 단계</span>'
+            "</div>"
+            f'<div class="progress" aria-hidden="true"><i style="width:{pct}%"></i></div>'
+            f"{label}{_tray(step.tray)}"
+            f'<figure class="step-img"><img src="{_e(step.image)}" alt="{step.number}단계 조립 모습" loading="lazy"></figure>'
+            "</section>"
+        )
+    cards.append(
+        '<section class="card done" id="done">'
+        '<p class="badge t-heading">완성!</p>'
+        f'<h1 class="t-title">{_e(view.name)}</h1>'
+        f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}">'
+        "</section>"
+    )
+    if print_mode:
+        body_attrs = ' class="manual print"'
+    elif sw:
+        body_attrs = f' class="manual" data-sw="{_e(sw)}"'
+    else:
+        body_attrs = ' class="manual"'
+    out = [_head(f"{view.name} 만들기", assets=assets, manifest=manifest, print_mode=print_mode), f"<body{body_attrs}>",
+           f'<main class="wrap deck" id="deck">{"".join(cards)}</main>']
+    if not print_mode:
+        out += [
+            (
+                '<nav class="pager" hidden><div class="pager-in">'
+                '<button type="button" class="prev t-button">‹ 이전</button>'
+                '<button type="button" class="next t-button">다음 ›</button>'
+                "</div></nav>"
+            ),
+            f'<script src="{_e(assets)}manual.js" defer></script>',
+        ]
+    out.append("</body>\n</html>\n")
+    return "\n".join(out)
+
+
+def gallery_html(cards: list[GalleryCard]) -> str:
+    if cards:
+        items = "".join(
+            f'<li><a class="model-card" href="{_e(c.slug)}/">'
+            f'<img src="{_e(c.image)}" alt="" loading="lazy">'
+            f'<span class="t-title">{_e(c.name)}</span>'
+            f'<span class="t-caption">부품 {c.part_count}개 · {c.step_count}단계</span>'
+            "</a></li>"
+            for c in cards
+        )
+        body = f'<ul class="grid">{items}</ul>'
+    else:
+        body = '<p class="t-body empty">아직 완성된 작품이 없어요.</p>'
+    return "\n".join([
+        _head("Brick Steps", assets="assets/", manifest="manifest.webmanifest", print_mode=False),
+        '<body class="gallery" data-sw="sw.js">',
+        f'<main class="wrap"><h1 class="t-title">무엇을 만들까요?</h1>{body}</main>',
+        '<script src="assets/manual.js" defer></script>',
+        "</body>\n</html>\n",
+    ])
+
+
+def web_manifest(paper: str) -> str:
+    return json.dumps({
+        "name": "Brick Steps",
+        "short_name": "Brick Steps",
+        "lang": "ko",
+        "start_url": "./",
+        "scope": "./",
+        "display": "standalone",
+        "orientation": "portrait",
+        "background_color": paper,
+        "theme_color": paper,
+        "icons": [
+            {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+        ],
+    }, ensure_ascii=False, indent=2)
+
+
+def is_published(meta: dict, include_drafts: bool) -> bool:
+    return include_drafts or meta.get("status") == "ready"
