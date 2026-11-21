@@ -7,11 +7,7 @@ a new model in the series gets the next number and may record what it was `based
 
 from __future__ import annotations
 
-import re
-
 from .report import Issue
-
-PORT_RE = re.compile(r"\bPort\.([A-F])\b")
 
 
 def model_slug(series: str, number: int) -> str:
@@ -66,19 +62,4 @@ def check_catalog(slug: str, metas: dict[str, dict]) -> list[Issue]:
             break
         seen.add(base)
         base = metas[base].get("based_on")
-    return issues
-
-
-def program_ports(text: str) -> set[str]:
-    """Hub ports a Pybricks program uses, ignoring comments."""
-    return {m for line in text.splitlines() for m in PORT_RE.findall(line.split("#", 1)[0])}
-
-
-def check_programs(programs: dict[str, str], declared: set[str]) -> list[Issue]:
-    issues = []
-    for name, text in sorted(programs.items()):
-        extra = sorted(program_ports(text) - declared)
-        if extra:
-            issues.append(Issue("error", "program-port-undeclared",
-                                f"{name} uses port {', '.join(extra)} without a `0 !LC PORT` line in the model"))
     return issues

@@ -27,6 +27,14 @@ class StepView:
 
 
 @dataclass(frozen=True)
+class MissionView:
+    title: str
+    goal: str
+    blocks: str  # HTML from missions.blocks_html
+    try_: str = ""
+
+
+@dataclass(frozen=True)
 class ManualView:
     slug: str
     name: str
@@ -37,6 +45,9 @@ class ManualView:
     model3d: str | None = None
     main_sub: str | None = None
     done_shown: int = 0
+    draft: bool = False
+    intro: str | None = None
+    missions: list[MissionView] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -56,7 +67,7 @@ def _e(text: object) -> str:
     return escape(str(text), quote=True)
 
 
-def _head(title: str, *, assets: str, manifest: str | None, print_mode: bool) -> str:
+def _head(title: str, *, assets: str, manifest: str | None, print_mode: bool, noindex: bool = False) -> str:
     parts = [
         "<!doctype html>",
         '<html lang="ko">',
@@ -67,6 +78,8 @@ def _head(title: str, *, assets: str, manifest: str | None, print_mode: bool) ->
         f'<link rel="stylesheet" href="{FONTS}">',
         f'<link rel="stylesheet" href="{_e(assets)}site.css">',
     ]
+    if noindex:
+        parts.append('<meta name="robots" content="noindex">')
     if manifest and not print_mode:
         root = manifest.rsplit("/", 1)[0] + "/" if "/" in manifest else ""
         parts += [
@@ -114,9 +127,12 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
 
     cards = [
         '<section class="card cover" id="cover">'
+        + ('<p class="draft-note t-body">아직 만들어 보지 않은 설계예요. 부품이 안 맞을 수 있어요.</p>' if view.draft else "")
+        +
         f'<h1 class="t-title">{_e(view.name)}</h1>'
         f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}">'
-        f'<p class="t-body">부품 {view.part_count}개 · {total}단계</p>'
+        + (f'<p class="t-body intro">{_e(view.intro)}</p>' if view.intro else "")
+        + f'<p class="t-body">부품 {view.part_count}개 · {total}단계</p>'
         + (f'<p class="t-caption"><a href="{_e(view.pdf)}">PDF로 보기</a></p>' if view.pdf and not print_mode else "")
         + "</section>"
     ]
@@ -143,6 +159,16 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
         + ('<p class="t-caption credit">부품 모양은 LDraw.org Parts Library(CC BY 4.0)에서 왔어요.</p>' if with_3d else "")
         + "</section>"
     )
+    for k, mission in enumerate(view.missions, 1):
+        cards.append(
+            f'<section class="card mission" id="mission-{k}">'
+            f'<p class="mission-label t-caption">움직여 보기 {k} / {len(view.missions)}</p>'
+            f'<h2 class="t-heading">{_e(mission.title)}</h2>'
+            + (f'<p class="t-body">{_e(mission.goal)}</p>' if mission.goal else "")
+            + mission.blocks
+            + (f'<p class="try t-body">{_e(mission.try_)}</p>' if mission.try_ else "")
+            + "</section>"
+        )
     if print_mode:
         body_attrs = ' class="manual print"'
     else:
@@ -151,7 +177,8 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
             body_attrs += f' data-sw="{_e(sw)}"'
         if with_3d:
             body_attrs += f' data-model3d="{_e(view.model3d)}"'
-    out = [_head(f"{view.name} 만들기", assets=assets, manifest=manifest, print_mode=print_mode), f"<body{body_attrs}>",
+    out = [_head(f"{view.name} 만들기", assets=assets, manifest=manifest, print_mode=print_mode, noindex=view.draft),
+           f"<body{body_attrs}>",
            f'<main class="wrap deck" id="deck">{"".join(cards)}</main>']
     if not print_mode:
         out += [
@@ -174,11 +201,17 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
     return "\n".join(out)
 
 
-def gallery_html(cards: list[GalleryCard]) -> str:
+def gallery_html(cards: list[GalleryCard], *, lab: bool = False) -> str:
+    """The gallery of ready models, or with lab=True the hidden lab of drafts under lab/.
+
+    The gallery logo opens the lab after five taps (manual.js); nothing links to it.
+    """
+    up = "../" if lab else ""
+    chip = '<span class="wip-chip t-caption">만드는 중</span>' if lab else ""
     if cards:
         items = "".join(
             f'<li><a class="model-card" href="{_e(c.slug)}/">'
-            f'<img src="{_e(c.image)}" alt="" loading="lazy">'
+            f'<img src="{_e(c.image)}" alt="" loading="lazy">{chip}'
             f'<span class="t-title">{_e(c.name)}</span>'
             f'<span class="t-caption">부품 {c.part_count}개 · {c.step_count}단계</span>'
             "</a></li>"
@@ -186,17 +219,23 @@ def gallery_html(cards: list[GalleryCard]) -> str:
         )
         body = f'<ul class="grid">{items}</ul>'
     else:
-        body = '<p class="t-body empty">아직 완성된 작품이 없어요.</p>'
+        body = f'<p class="t-body empty">{"실험실이 비어 있어요." if lab else "아직 완성된 작품이 없어요."}</p>'
+    if lab:
+        heading = ('<p class="t-caption"><a href="../">‹ 갤러리로</a></p><h1 class="t-title">실험실</h1>'
+                   '<p class="t-body">아직 만들어 보지 않은 설계예요.</p>')
+    else:
+        heading = '<h1 class="t-title">무엇을 만들까요?</h1>'
     return "\n".join([
-        _head("Brick Steps", assets="assets/", manifest="manifest.webmanifest", print_mode=False),
-        '<body class="gallery" data-sw="sw.js">',
+        _head("Brick Steps 실험실" if lab else "Brick Steps", assets=f"{up}assets/", manifest=f"{up}manifest.webmanifest",
+              print_mode=False, noindex=lab),
+        f'<body class="gallery" data-sw="{up}sw.js"' + ("" if lab else ' data-lab="lab/"') + ">",
         (
             '<main class="wrap"><header class="site-head">'
-            '<img class="brand" src="brand/brick-steps-lockup.svg" alt="Brick Steps" width="488" height="113">'
+            f'<img class="brand" src="{up}brand/brick-steps-lockup.svg" alt="Brick Steps" width="488" height="113">'
             f'<p class="tagline t-caption">{TAGLINE}</p></header>'
-            f'<h1 class="t-title">무엇을 만들까요?</h1>{body}</main>'
+            f'{heading}{body}</main>'
         ),
-        '<script src="assets/manual.js" defer></script>',
+        f'<script src="{up}assets/manual.js" defer></script>',
         "</body>\n</html>\n",
     ])
 
@@ -220,5 +259,6 @@ def web_manifest(paper: str) -> str:
     }, ensure_ascii=False, indent=2)
 
 
-def is_published(meta: dict, include_drafts: bool) -> bool:
-    return include_drafts or meta.get("status") == "ready"
+def is_published(meta: dict) -> bool:
+    """Ready models go to the gallery; every other model goes to the hidden lab."""
+    return meta.get("status") == "ready"

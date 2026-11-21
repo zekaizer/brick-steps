@@ -93,7 +93,7 @@ Declare ports in the `.mpd` with one line per device, written in the submodel th
 0 !LC PORT A 54675c01 drive_left
 ```
 
-Rules: ports go from A to F, each port is used once, the part must be a hub device, and the model must contain at least as many of that device as it has assignments. A device without a port is reported as a warning. The `role` (snake_case) becomes the Pybricks variable name later.
+Rules: ports go from A to F, each port is used once, the part must be a hub device, and the model must contain at least as many of that device as it has assignments. A device without a port is reported as a warning. The `role` (snake_case) documents what the device does; missions use the port letter in their blocks, and `lc validate` checks that every port a mission uses is declared here.
 
 ## Instruction structure
 

@@ -3,6 +3,7 @@ import json
 from lego_creator.site import (
     GalleryCard,
     ManualView,
+    MissionView,
     StepView,
     TrayItem,
     gallery_html,
@@ -68,10 +69,31 @@ def test_web_manifest_is_standalone_app():
     assert m["background_color"] == "#f2f7f8" and {i["sizes"] for i in m["icons"]} == {"192x192", "512x512"}
 
 
-def test_only_ready_models_publish_unless_drafts_included():
-    assert is_published({"status": "ready"}, False)
-    assert not is_published({"status": "draft"}, False)
-    assert is_published({"status": "draft"}, True)
+def test_only_ready_models_go_to_the_gallery():
+    assert is_published({"status": "ready"})
+    assert not is_published({"status": "draft"}) and not is_published({})
+
+
+def test_gallery_logo_leads_to_the_hidden_lab():
+    html = gallery_html([])
+    assert 'data-lab="lab/"' in html and 'href="lab/' not in html
+
+
+def test_lab_gallery_marks_every_card_as_in_progress_and_hides_from_search():
+    html = gallery_html([GalleryCard("tank-1", "탱크 1호", "tank-1/img/hero.png", 114, 14)], lab=True)
+    assert '<meta name="robots" content="noindex">' in html
+    assert "실험실" in html and "만드는 중" in html and 'href="tank-1/"' in html
+    assert 'href="../assets/site.css"' in html and 'src="../brand/brick-steps-lockup.svg"' in html
+    assert 'data-sw="../sw.js"' in html and 'href="../"' in html and "data-lab" not in html
+    assert "실험실이 비어 있어요" in gallery_html([], lab=True)
+
+
+def test_draft_manual_says_it_is_untested_and_hides_from_search():
+    draft = ManualView("tank-1", "탱크 1호", 1, "img/hero.png", [StepView(1, "img/s0-01.png")], draft=True)
+    html = manual_html(draft, assets="../../assets/")
+    assert '<meta name="robots" content="noindex">' in html and "아직 만들어 보지 않은 설계예요" in html
+    plain = manual_html(VIEW, assets="./")
+    assert "noindex" not in plain and "아직 만들어 보지 않은" not in plain
 
 
 def test_pages_load_brand_fonts_and_favicons():
@@ -130,3 +152,46 @@ def test_manual_html_without_3d_or_in_print_has_no_3d_hooks():
     for html in (manual_html(VIEW, assets="./"), manual_html(VIEW_3D, assets="./", print_mode=True)):
         assert "data-model3d" not in html and "viewer3d.js" not in html and "importmap" not in html
         assert "data-sub" not in html
+
+
+VIEW_STORY = ManualView(
+    slug="tank-1",
+    name="탱크 1호",
+    part_count=10,
+    hero="img/hero.png",
+    steps=[StepView(1, "img/s0-01.png")],
+    intro="울퉁불퉁한 길도 잘 가요.",
+    missions=[
+        MissionView("앞뒤로 달리기", "앞으로 갔다가 돌아와요.", '<ol class="blocks"><li>B</li></ol>', "2를 3으로 바꾸면?"),
+        MissionView("빙글 돌기", "제자리에서 돌아요.", '<ol class="blocks"><li>C</li></ol>', ""),
+    ],
+)
+
+
+def test_manual_html_tells_the_story_on_the_cover():
+    html = manual_html(VIEW_STORY, assets="./")
+    cover = html[html.index('id="cover"'):html.index('id="step-1"')]
+    assert "울퉁불퉁한 길도 잘 가요." in cover
+
+
+def test_manual_html_adds_a_card_per_mission_after_the_finished_model():
+    html = manual_html(VIEW_STORY, assets="./")
+    assert html.index('id="done"') < html.index('id="mission-1"') < html.index('id="mission-2"')
+    one = html[html.index('id="mission-1"'):html.index('id="mission-2"')]
+    assert 'class="card mission"' in one and "움직여 보기 1 / 2" in one
+    assert "앞뒤로 달리기" in one and "앞으로 갔다가 돌아와요." in one and "<li>B</li>" in one
+    assert "2를 3으로 바꾸면?" in one
+    two = html[html.index('id="mission-2"'):]
+    assert 'class="try' not in two
+
+
+def test_manual_html_keeps_missions_in_print():
+    html = manual_html(VIEW_STORY, assets="./", print_mode=True)
+    assert 'id="mission-1"' in html and 'id="mission-2"' in html
+
+
+def test_site_css_stops_double_tap_zoom():
+    from pathlib import Path
+
+    css = (Path(__file__).resolve().parents[1] / "src" / "lego_creator" / "site_assets" / "components.css").read_text()
+    assert "touch-action: manipulation" in css

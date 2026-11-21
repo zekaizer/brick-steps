@@ -61,6 +61,8 @@ Kit items with no LDraw model are the USB cable 39881, storage bins and trays, a
 
 ## Pybricks
 
+Children's missions use the SPIKE App, not Pybricks (ADR 0003). Pybricks remains relevant for maintainer projects such as the LMS-ESP32 board.
+
 Pybricks has no separate large or medium motor class: both use `pybricks.pupdevices.Motor`. The sensors use `ColorSensor`, `UltrasonicSensor` (the distance sensor) and `ForceSensor`. The hub is `pybricks.hubs.PrimeHub`.
 
 ## Third-party: LMS-ESP32 v2.0 (Anton's Mindstorms)

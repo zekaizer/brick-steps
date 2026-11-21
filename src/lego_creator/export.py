@@ -14,11 +14,13 @@ import yaml
 from .design import tokens_css
 from .instructions import build_mpd, plan
 from .ldraw import Library, flatten, parse, step_groups
+from .missions import blocks_html, parse_missions
 from .pack3d import pack_model
 from .render import render_image, render_steps
 from .site import (
     GalleryCard,
     ManualView,
+    MissionView,
     StepView,
     TrayItem,
     gallery_html,
@@ -93,9 +95,19 @@ def _render_thumbs(keys: set[tuple[str, int]], thumbs_dir: Path, env: ExportEnv)
         return dict(pool.map(one, sorted(keys)))
 
 
+def load_mission_views(model_dir: Path) -> list[MissionView]:
+    """Mission cards from models/<slug>/missions.yaml; `lc validate` reports problems in it."""
+    path = model_dir / "missions.yaml"
+    if not path.exists():
+        return []
+    missions, _ = parse_missions(yaml.safe_load(path.read_text(encoding="utf-8")) or [])
+    return [MissionView(m.title, m.goal, blocks_html(m.blocks), m.try_) for m in missions]
+
+
 def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: Path, *, thumbs_dir: Path,
                  thumbs_href: str, assets_href: str, sw_href: str | None, manifest_href: str | None,
-                 pdf: bool) -> GalleryCard:
+                 pdf: bool, intro: str | None = None, missions: list[MissionView] | None = None,
+                 draft: bool = False) -> GalleryCard:
     """Render and write one manual into out_dir (index.html, img/, optional manual.pdf)."""
     doc = parse(mpd_text, default_name=f"{slug}.ldr")
     sections = plan(doc)
@@ -141,7 +153,8 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
     shutil.copyfile(final_of[main], hero)
     (out_dir / MODEL_3D).write_text(pack_model(mpd_text, main, [env.ldraw, env.custom]), encoding="utf-8")
     view = ManualView(slug, name, sum(flatten(doc).values()), rel(hero), steps, "manual.pdf" if pdf else None,
-                      model3d=MODEL_3D, main_sub=main, done_shown=len(doc.main.refs))
+                      model3d=MODEL_3D, main_sub=main, done_shown=len(doc.main.refs), intro=intro,
+                      missions=missions or [], draft=draft)
     (out_dir / "index.html").write_text(
         manual_html(view, assets=assets_href, sw=sw_href, manifest=manifest_href), encoding="utf-8"
     )
@@ -162,8 +175,11 @@ def _brand(root: Path, out: Path) -> None:
         shutil.copyfile(src / name, out / dest)
 
 
-def build_site(root: Path, out: Path, env: ExportEnv, *, include_drafts: bool, pdf: bool) -> list[GalleryCard]:
-    """Gallery + one manual per published model under out/, ready for GitHub Pages."""
+def build_site(root: Path, out: Path, env: ExportEnv, *, pdf: bool) -> tuple[list[GalleryCard], list[GalleryCard]]:
+    """Gallery + one manual per ready model under out/, and every other model in the hidden lab under out/lab/.
+
+    Returns the gallery cards and the lab cards.
+    """
     out.mkdir(parents=True, exist_ok=True)
     write_assets(out / "assets", env.tokens)
     shutil.copyfile(ASSETS / "sw.js", out / "sw.js")
@@ -171,16 +187,21 @@ def build_site(root: Path, out: Path, env: ExportEnv, *, include_drafts: bool, p
     (out / ".nojekyll").write_text("", encoding="utf-8")
     _brand(root, out)
 
-    cards = []
+    cards: list[GalleryCard] = []
+    lab: list[GalleryCard] = []
     for meta_path in sorted((root / "models").glob("*/model.yaml")):
         meta = yaml.safe_load(meta_path.read_text(encoding="utf-8")) or {}
-        if not is_published(meta, include_drafts):
-            continue
         slug = meta_path.parent.name
-        cards.append(build_manual(
+        ready = is_published(meta)
+        up = "../" if ready else "../../"
+        (cards if ready else lab).append(build_manual(
             meta.get("name", slug), slug, (meta_path.parent / "model.mpd").read_text(encoding="utf-8"), env,
-            out / slug, thumbs_dir=out / "parts", thumbs_href="../parts/", assets_href="../assets/",
-            sw_href="../sw.js", manifest_href="../manifest.webmanifest", pdf=pdf,
+            (out if ready else out / "lab") / slug, thumbs_dir=out / "parts", thumbs_href=f"{up}parts/",
+            assets_href=f"{up}assets/", sw_href=f"{up}sw.js", manifest_href=f"{up}manifest.webmanifest", pdf=pdf,
+            intro=(meta.get("story") or {}).get("intro"), missions=load_mission_views(meta_path.parent),
+            draft=not ready,
         ))
     (out / "index.html").write_text(gallery_html(cards), encoding="utf-8")
-    return cards
+    (out / "lab").mkdir(exist_ok=True)
+    (out / "lab" / "index.html").write_text(gallery_html(lab, lab=True), encoding="utf-8")
+    return cards, lab

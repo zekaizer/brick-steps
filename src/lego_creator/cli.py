@@ -21,9 +21,10 @@ from pathlib import Path
 import yaml
 
 from .bom import Bom, load_id_map, load_inventory, load_unknown_parts
-from .catalog import check_catalog, check_programs, model_slug, new_meta, next_number, revise, updated
-from .export import ExportEnv, build_manual, build_site, write_assets
+from .catalog import check_catalog, model_slug, new_meta, next_number, revise, updated
+from .export import ExportEnv, build_manual, build_site, load_mission_views, write_assets
 from .ldraw import Library, flatten, parse
+from .missions import check_missions, parse_missions
 from .ports import parse_ports
 from .rebrickable import extract_set_inventory
 from .release import check_release, release_notes
@@ -59,10 +60,10 @@ Declared in `model.mpd` as `0 !LC PORT` lines; `lc validate` checks them.
 ## Open questions
 """
 
-PROGRAM_TEMPLATE = """\
-from pybricks.hubs import PrimeHub
-
-hub = PrimeHub()
+MISSIONS_TEMPLATE = """\
+# SPIKE App word-block missions shown after the finished model (ADR 0003).
+# Block ids and arguments: src/lego_creator/missions.py
+[]
 """
 
 
@@ -128,7 +129,7 @@ def cmd_new(root: Path, _lib: Library, args: argparse.Namespace) -> int:
     d = root / "models" / model_slug(args.series, number)
     if d.exists():
         return _fail(f"{d} already exists")
-    (d / "program").mkdir(parents=True)
+    d.mkdir(parents=True)
     name = _numbered_name(args.name, base and base.get("name"), args.series, number)
     if args.kit:
         kits = _kit_counts(args.kit)
@@ -138,10 +139,10 @@ def cmd_new(root: Path, _lib: Library, args: argparse.Namespace) -> int:
     if base:
         src = root / "models" / args.base
         shutil.copyfile(src / "model.mpd", d / "model.mpd")
-        shutil.copytree(src / "program", d / "program", dirs_exist_ok=True)
+        shutil.copyfile(src / "missions.yaml", d / "missions.yaml")
     else:
         (d / "model.mpd").write_text(MPD_TEMPLATE.format(name=name, author=args.author), encoding="utf-8")
-        (d / "program" / "main.py").write_text(PROGRAM_TEMPLATE, encoding="utf-8")
+        (d / "missions.yaml").write_text(MISSIONS_TEMPLATE, encoding="utf-8")
     (d / "spec.md").write_text(SPEC_TEMPLATE.format(name=name), encoding="utf-8")
     print(f"created {d}")
     return 0
@@ -183,8 +184,10 @@ def cmd_validate(root: Path, lib: Library, args: argparse.Namespace) -> int:
     unknown = set().union(*(load_unknown_parts(root / "inventory" / f"{k}.csv") for k in kits))
     issues = validate(doc, lib, available, load_id_map(root / "inventory" / "id-map.csv"), unknown)
     issues += check_catalog(args.slug, _all_metas(root))
-    programs = {p.name: p.read_text(encoding="utf-8") for p in sorted((mpd.parent / "program").glob("*.py"))}
-    issues += check_programs(programs, {a.port for a in parse_ports(doc)[0]})
+    missions_file = mpd.parent / "missions.yaml"
+    if missions_file.exists():
+        missions, mission_issues = parse_missions(yaml.safe_load(missions_file.read_text(encoding="utf-8")) or [])
+        issues += mission_issues + check_missions(missions, {a.port for a in parse_ports(doc)[0]})
     for i in issues:
         print(f"{i.level:7} {i.code:20} {i.message}")
     errors = sum(i.level == "error" for i in issues)
@@ -253,8 +256,9 @@ def _export_env(root: Path, args: argparse.Namespace) -> ExportEnv:
 
 def cmd_site(root: Path, _lib: Library, args: argparse.Namespace) -> int:
     out = args.out or root / "site"
-    cards = build_site(root, out, _export_env(root, args), include_drafts=args.include_drafts, pdf=not args.no_pdf)
-    print(f"{out}: {len(cards)} manual(s): {', '.join(c.slug for c in cards) or 'none'}")
+    cards, lab = build_site(root, out, _export_env(root, args), pdf=not args.no_pdf)
+    print(f"{out}: {len(cards)} manual(s): {', '.join(c.slug for c in cards) or 'none'}; "
+          f"lab: {', '.join(c.slug for c in lab) or 'none'}")
     return 0
 
 
@@ -266,7 +270,7 @@ def cmd_instructions(root: Path, _lib: Library, args: argparse.Namespace) -> int
     card = build_manual(
         meta.get("name", args.slug), args.slug, mpd.read_text(encoding="utf-8"), env, out,
         thumbs_dir=out / "parts", thumbs_href="parts/", assets_href="assets/", sw_href=None, manifest_href=None,
-        pdf=not args.no_pdf,
+        pdf=not args.no_pdf, intro=(meta.get("story") or {}).get("intro"), missions=load_mission_views(mpd.parent),
     )
     print(f"{out / 'index.html'}: {card.step_count} steps, {card.part_count} parts")
     return 0
@@ -308,7 +312,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--status")
     s.set_defaults(func=cmd_list)
 
-    s = sub.add_parser("validate", help="check parts, kit inventory, ports, catalog fields and program ports")
+    s = sub.add_parser("validate", help="check parts, kit inventory, ports, catalog fields and missions")
     s.add_argument("slug")
     s.set_defaults(func=cmd_validate)
 
@@ -322,9 +326,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--no-pdf", action="store_true")
     s.set_defaults(func=cmd_instructions)
 
-    s = sub.add_parser("site", help="build the gallery + manuals site (GitHub Pages) via LeoCAD")
+    s = sub.add_parser("site", help="build the gallery, manuals and the hidden lab of drafts (GitHub Pages) via LeoCAD")
     s.add_argument("--out", type=Path, help="default: <root>/site")
-    s.add_argument("--include-drafts", action="store_true", help="also publish models whose status is not ready")
     s.add_argument("--no-pdf", action="store_true")
     s.set_defaults(func=cmd_site)
 

@@ -10,13 +10,18 @@ All notable changes to this project are recorded here. The format follows
 - Brick Steps branding: a logo of two stacked bricks with sparkles, the tagline "AI와 함께 만들고, 한 단계씩 따라 해요", app and maskable icons, and favicons. The gallery shows the logo and tagline.
 - Manuals show each step as a 3D model that can be turned with a finger. New parts drop into place with a yellow outline, and the finished model turns on the last screen. Devices without WebGL, and the PDF, keep the rendered pictures.
 - Models are named by series and number (`tank-1`, "탱크 1호"). `lc new <series>` picks the next number and `--from` starts from an existing model, `lc revise` records revisions with a date and note, and `lc list` shows every model with its status, revision and base model.
-- `lc validate` also checks a model's catalog fields and that its programs only use ports the model declares.
+- `lc validate` also checks a model's catalog fields and its missions.
+- After the finished model, manuals show "움직여 보기" mission cards: SPIKE App word blocks drawn in their palette colors, with a question that invites one change. The cover shows the model's one-line story.
+- A hidden lab at `/lab/` shows models that are still drafts, marked as untested. Tap the gallery logo five times to open it.
 
 ### Changed
+- `lc site` always builds drafts into the lab; `--include-drafts` is gone.
+- Models no longer keep Pybricks programs. Children program in the SPIKE App with word blocks, so `lc new` writes `missions.yaml` instead of `program/main.py`.
 - Headings use Lexend with Noto Sans KR instead of Jua.
 - The repository is now github.com/zekaizer/brick-steps, and the manuals are served at https://zekaizer.github.io/brick-steps/. The old lego-creator Pages address no longer works.
 
 ### Fixed
+- Tapping twice quickly on an iPad no longer zooms the page.
 - `lc new --name` with a Korean name now writes the name as readable text in `model.yaml`.
 - The GitHub Pages build no longer fails in its container: git now trusts the checkout, so the site deploys.
 

@@ -58,6 +58,26 @@
         "name": "green",
         "value": "#237841",
         "usage": "LEGO 그린(LDraw 2). 완성 상태(마지막 화면, 완성 배지)에만 쓰고 항상 완성이라는 글자와 함께 쓴다. 이 색 위의 글자는 `surface`(5.5:1)."
+      },
+      {
+        "name": "block-events",
+        "value": "#edc542",
+        "usage": "SPIKE 앱의 이벤트 블록(프로그램이 시작될 때). 임무 카드의 블록 그림에만 쓰고 글자는 `ink`(8.8:1). SPIKE 앱(3.x) 화면 캡처에서 뽑은 값이다(PrimeLessons SPIKE Prime 3 블록 가이드). 앱은 이 위에 흰 글자를 쓰지만 대비가 모자라 우리는 `ink`를 쓴다."
+      },
+      {
+        "name": "block-control",
+        "value": "#f4b744",
+        "usage": "SPIKE 앱의 제어 블록(기다리기, 반복하기). 블록 그림에만 쓰고 글자는 `ink`(8.2:1). `block-events`와 밝기가 비슷하므로 블록 문구와 반복 블록의 모양으로 구분한다. SPIKE 앱(3.x) 화면 캡처에서 뽑은 값이다(PrimeLessons SPIKE Prime 3 블록 가이드). 앱은 이 위에 흰 글자를 쓰지만 대비가 모자라 우리는 `ink`를 쓴다."
+      },
+      {
+        "name": "block-movement",
+        "value": "#ea66c9",
+        "usage": "SPIKE 앱의 동작 블록(동작 모터를 정하기, 움직이기). 블록 그림에만 쓰고 글자는 `ink`(5.1:1). SPIKE 앱(3.x) 화면 캡처에서 뽑은 값이다(PrimeLessons SPIKE Prime 3 블록 가이드). 앱은 이 위에 흰 글자를 쓰지만 대비가 모자라 우리는 `ink`를 쓴다."
+      },
+      {
+        "name": "block-motors",
+        "value": "#3990ef",
+        "usage": "SPIKE 앱의 모터 블록. 블록 그림에만 쓰고 글자는 `ink`(4.5:1). SPIKE 앱(3.x) 화면 캡처에서 뽑은 값이다(PrimeLessons SPIKE Prime 3 블록 가이드). 앱은 이 위에 흰 글자를 쓰지만 대비가 모자라 우리는 `ink`를 쓴다."
       }
     ]
   },

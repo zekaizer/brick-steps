@@ -28,7 +28,7 @@ def test_new_scaffolds_model_directory(tmp_path):
     assert meta["status"] == "draft"
     assert (d / "model.mpd").read_text().startswith("0 FILE main.ldr\n")
     assert (d / "spec.md").exists()
-    assert (d / "program" / "main.py").exists()
+    assert (d / "missions.yaml").exists() and not (d / "program").exists()
 
 
 def test_new_writes_a_korean_name_readably(tmp_path):
@@ -52,12 +52,12 @@ def test_new_from_copies_the_base_model_and_records_it(tmp_path):
     run(root, "new", "tank", "--name", "탱크")
     base = root / "models" / "tank-1"
     (base / "model.mpd").write_text("0 FILE main.ldr\n0 탱크\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n")
-    (base / "program" / "main.py").write_text("# base program\n")
+    (base / "missions.yaml").write_text("# base missions\n[]\n")
     assert run(root, "new", "tank", "--from", "tank-1") == 0
     d = root / "models" / "tank-2"
     meta = yaml.safe_load((d / "model.yaml").read_text(encoding="utf-8"))
     assert meta["name"] == "탱크 2호" and meta["based_on"] == "tank-1"
-    assert "3001.dat" in (d / "model.mpd").read_text() and (d / "program" / "main.py").read_text() == "# base program\n"
+    assert "3001.dat" in (d / "model.mpd").read_text() and (d / "missions.yaml").read_text() == "# base missions\n[]\n"
     assert run(root, "new", "tank", "--from", "nope-1") != 0
 
 
@@ -85,15 +85,17 @@ def test_list_shows_models_and_filters(tmp_path, capsys):
     assert "tank-1" not in capsys.readouterr().out
 
 
-def test_validate_checks_program_ports_and_relations(tmp_path, capsys):
+def test_validate_checks_missions_against_declared_ports(tmp_path, capsys):
     root = setup_root(tmp_path)
     run(root, "new", "x")
     d = root / "models" / "x-1"
-    (d / "model.mpd").write_text("0 FILE main.ldr\n0 !LC PORT A 54675c01 drive\n1 322 0 0 0 1 0 0 0 1 0 0 0 1 54675c01.dat\n")
-    (d / "program" / "main.py").write_text("from pybricks.parameters import Port\nMotor(Port.A)\nMotor(Port.B)\n")
+    (d / "model.mpd").write_text("0 FILE main.ldr\n0 !LC PORT A 54675c01 drive\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 54675c01.dat\n")
+    (d / "missions.yaml").write_text("- title: t\n  goal: g\n  blocks:\n  - [run_motor_for, B, clockwise, 1, rotations]\n")
     capsys.readouterr()
     assert run(root, "validate", "x-1") == 1
-    assert "program-port-undeclared" in capsys.readouterr().out
+    assert "mission-port-undeclared" in capsys.readouterr().out
+    (d / "missions.yaml").write_text("- title: t\n  goal: g\n  blocks:\n  - [run_motor_for, A, clockwise, 1, rotations]\n")
+    assert run(root, "validate", "x-1") == 0
 
 
 def test_validate_scaffold_passes(tmp_path):
