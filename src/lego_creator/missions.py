@@ -38,19 +38,23 @@ class Block:
     kinds: tuple[str, ...] = ()  # port, number, direction, spin, unit
     joined: bool = False  # all arguments share slot {0}, joined with "+" (motor pairs)
     c_shape: bool = False  # holds inner blocks
+    checked: bool = False  # wording compared with the SPIKE App on an iPad
 
 
-# The Korean wording must match the SPIKE App word for word. It has not yet been checked
-# against the app on an iPad; correct it here when it is.
+# The Korean wording must match the SPIKE App word for word. `checked` blocks were compared with
+# a photo of the app (2026-11-22); the rest are guesses, and `lc validate` warns when a mission
+# uses one. The app calls the movement palette 동작.
 BLOCKS: dict[str, Block] = {
-    "when_program_starts": Block("events", "프로그램이 시작되면"),
-    "set_movement_motors": Block("movement", "이동 모터를 {0}(으)로 설정하기", ("port", "port"), joined=True),
-    "set_movement_speed": Block("movement", "이동 속도를 {0}%로 설정하기", ("number",)),
-    "move_for": Block("movement", "{0} 방향으로 {1} {2} 이동하기", ("direction", "number", "unit")),
-    "start_moving": Block("movement", "{0} 방향으로 이동 시작하기", ("direction",)),
-    "stop_moving": Block("movement", "이동 멈추기"),
-    "run_motor_for": Block("motors", "{0} 모터를 {1} 방향으로 {2} {3} 실행하기", ("port", "spin", "number", "unit")),
-    "wait": Block("control", "{0}초 동안 기다리기", ("number",)),
+    "when_program_starts": Block("events", "프로그램이 시작될 때", checked=True),
+    "set_movement_motors": Block("movement", "동작 모터를 {0}(으)로 정하기", ("port", "port"), joined=True, checked=True),
+    "set_movement_speed": Block("movement", "동작 속도를 {0}%로 정하기", ("number",), checked=True),
+    # The photo shows "↑ 방향으로 10 회전 만큼 움…"; the last word is cut off.
+    "move_for": Block("movement", "{0} 방향으로 {1} {2} 만큼 움직이기", ("direction", "number", "unit")),
+    "start_moving": Block("movement", "{0} 방향으로 동작 시작하기", ("direction",), checked=True),
+    "stop_moving": Block("movement", "이동 멈추기", checked=True),
+    # The photo shows "A 모터 ↻ 방향으로 1 …"; the rest is cut off.
+    "run_motor_for": Block("motors", "{0} 모터 {1} 방향으로 {2} {3} 만큼 움직이기", ("port", "spin", "number", "unit")),
+    "wait": Block("control", "{0}초 기다리기", ("number",)),
     "repeat": Block("control", "{0}번 반복하기", ("number",), c_shape=True),
 }
 
@@ -128,6 +132,10 @@ def check_missions(missions: list[Mission], declared: set[str]) -> list[Issue]:
                     or (b.body and not spec.c_shape)):
                 wanted = ", ".join(spec.kinds) or "no arguments"
                 issues.append(Issue("error", "block-args", f"{m.title}: {b.block} takes {wanted}, got {list(b.args)}"))
+        unchecked = sorted({b.block for b in _walk(m.blocks) if b.block in BLOCKS and not BLOCKS[b.block].checked})
+        if unchecked:
+            issues.append(Issue("warning", "block-wording-unchecked",
+                                f"{m.title}: wording of {', '.join(unchecked)} not yet compared with the SPIKE App"))
         extra = sorted(mission_ports(m) - declared)
         if extra:
             issues.append(Issue("error", "mission-port-undeclared",

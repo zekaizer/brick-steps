@@ -17,6 +17,10 @@ def codes(issues):
     return [(i.level, i.code) for i in issues]
 
 
+def errors(issues):
+    return [i for i in issues if i.level == "error"]
+
+
 def test_every_block_has_a_category_and_korean_wording():
     for block in BLOCKS.values():
         assert block.category in {"events", "movement", "motors", "control"}
@@ -41,7 +45,7 @@ def test_parse_reports_a_mission_without_title_or_blocks():
 
 def test_check_accepts_a_valid_mission():
     missions, _ = parse_missions(SQUARE)
-    assert check_missions(missions, {"A", "B"}) == []
+    assert errors(check_missions(missions, {"A", "B"})) == []
 
 
 def test_check_flags_unknown_blocks_and_bad_arguments():
@@ -52,7 +56,7 @@ def test_check_flags_unknown_blocks_and_bad_arguments():
         ["move_for", "forward", "two", "rotations"],
         ["repeat", 2, [["stop_moving"]]],
     ]}])
-    assert codes(check_missions(missions, {"A", "B"})) == [
+    assert codes(errors(check_missions(missions, {"A", "B"}))) == [
         ("error", "block-unknown"), ("error", "block-args"), ("error", "block-args"), ("error", "block-args"),
     ]
 
@@ -60,7 +64,7 @@ def test_check_flags_unknown_blocks_and_bad_arguments():
 def test_check_flags_ports_the_model_does_not_declare():
     missions, _ = parse_missions(SQUARE)
     assert mission_ports(missions[0]) == {"A", "B"}
-    issues = check_missions(missions, {"A"})
+    issues = errors(check_missions(missions, {"A"}))
     assert codes(issues) == [("error", "mission-port-undeclared")] and "B" in issues[0].message
 
 
@@ -72,3 +76,16 @@ def test_blocks_html_draws_each_block_in_its_category_with_its_wording():
     assert BLOCKS["when_program_starts"].template in html
     assert ">A+B<" in html.replace(" ", "")
     assert html.index("repeat-body") < html.rindex("move")
+
+
+def test_check_warns_about_blocks_whose_wording_is_not_checked_against_the_app():
+    unchecked = next(k for k, b in BLOCKS.items() if not b.checked)
+    checked = next(k for k, b in BLOCKS.items() if b.checked and not b.kinds)
+    missions, _ = parse_missions([{"title": "t", "goal": "g", "blocks": [[checked]]}])
+    assert check_missions(missions, set()) == []
+    args = {"number": 1, "port": "A", "direction": "forward", "spin": "clockwise", "unit": "rotations"}
+    block = [unchecked, *(args[k] for k in BLOCKS[unchecked].kinds)]
+    missions, _ = parse_missions([{"title": "t", "goal": "g", "blocks": [block]}])
+    issues = check_missions(missions, {"A"})
+    assert [(i.level, i.code) for i in issues] == [("warning", "block-wording-unchecked")]
+    assert unchecked in issues[0].message
