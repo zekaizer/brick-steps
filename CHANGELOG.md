@@ -19,6 +19,7 @@ All notable changes to this project are recorded here. The format follows
 - A hidden lab at `/lab/` shows models that are still drafts, marked as untested. Tap the gallery logo five times to open it.
 
 ### Changed
+- The home page and the lab are an adventure map instead of a list: a road per series with a stop per model, a 곧 나와요 stop at the end, and dotted lines to the model another series grew from. Tapping a stop opens a sheet with the story and a start button. Stops reached to the finished screen on this device show ✓ 다 만들었어요, which a small two-tap link in the sheet can clear (the model itself stays), and the first unbuilt stop says 다음은 여기!
 - Manuals fit one card on the iPad mini screen without scrolling, in portrait and in landscape. In landscape the step number, parts and buttons sit in a panel beside a larger picture, and the gallery shows three models per row.
 - `lc site` always builds drafts into the lab; `--include-drafts` is gone.
 - Models no longer keep Pybricks programs. Children program in the SPIKE App with word blocks, so `lc new` writes `missions.yaml` instead of `program/main.py`.

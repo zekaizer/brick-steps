@@ -28,6 +28,68 @@
     });
   }
 
+  // Adventure map: stops show what this device has built, and open a sheet to start or clear a build.
+  var map = document.querySelector(".map");
+  if (map) {
+    var stops = Array.prototype.slice.call(map.querySelectorAll("a.stop"));
+    var sheet = document.querySelector(".sheet");
+    var clear = sheet.querySelector(".clear");
+    var go = sheet.querySelector(".go");
+    var openStop = null, armed = false;
+    var pathOf = function (a) { return new URL(a.getAttribute("href"), location.href).pathname; };
+    var isBuilt = function (a) {
+      try { return localStorage.getItem("brick-steps:built:" + pathOf(a)) === "1"; } catch (e) { return false; }
+    };
+    var paint = function () {
+      var next = null;
+      stops.forEach(function (a) {
+        var built = isBuilt(a);
+        a.classList.toggle("built", built);
+        a.classList.remove("next");
+        if (!built && !next) next = a;
+      });
+      if (next) next.classList.add("next");
+    };
+    var close = function () {
+      sheet.classList.remove("on");
+      setTimeout(function () { if (!sheet.classList.contains("on")) sheet.hidden = true; }, 220);
+    };
+    stops.forEach(function (a) {
+      a.addEventListener("click", function (e) {
+        e.preventDefault();
+        openStop = a;
+        var built = isBuilt(a);
+        sheet.querySelector(".sheet-img").src = a.getAttribute("data-img");
+        sheet.querySelector(".name").textContent = a.getAttribute("data-name");
+        sheet.querySelector(".story").textContent = a.getAttribute("data-story");
+        sheet.querySelector(".meta").textContent = a.getAttribute("data-meta");
+        var from = sheet.querySelector(".from");
+        from.textContent = a.getAttribute("data-from") || "";
+        from.hidden = !from.textContent;
+        go.href = a.getAttribute("href") + (built ? "#cover" : "");
+        go.textContent = built ? "다시 만들기 ›" : "만들기 시작 ›";
+        clear.hidden = !built;
+        clear.textContent = "‘다 만들었어요’ 표시 지우기";
+        armed = false;
+        sheet.hidden = false;
+        requestAnimationFrame(function () { requestAnimationFrame(function () { sheet.classList.add("on"); }); });
+      });
+    });
+    sheet.querySelector(".x").addEventListener("click", close);
+    clear.addEventListener("click", function () {
+      if (!armed) { armed = true; clear.textContent = "한 번 더 누르면 ‘다 만들었어요’ 표시만 지워요"; return; }
+      var path = pathOf(openStop);
+      try {
+        localStorage.removeItem("brick-steps:built:" + path);
+        localStorage.removeItem("brick-steps:" + path);
+        localStorage.removeItem("brick-steps:" + path + ":max");
+      } catch (e) {}
+      paint();
+      close();
+    });
+    paint();
+  }
+
   var deck = document.getElementById("deck");
   var pager = document.querySelector(".pager");
   if (!deck || !pager) {
@@ -86,6 +148,9 @@
     if (history.replaceState) history.replaceState(null, "", "#" + card.id);
     window.scrollTo(0, 0);
     furthest = Math.max(furthest, current);
+    if (card.id === "done") {
+      try { localStorage.setItem("brick-steps:built:" + location.pathname, "1"); } catch (e) {}
+    }
     try { localStorage.setItem(key, card.id); localStorage.setItem(key + ":max", cards[furthest].id); } catch (e) {}
     mark();
     document.dispatchEvent(new CustomEvent("brick-steps:show", { detail: { card: card, dir: dir || 0 } }));

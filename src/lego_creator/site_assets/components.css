@@ -163,7 +163,6 @@ h1, p, figure { margin: 0; }
 .port-f { background: var(--port-f); }
 
 /* Hidden lab of drafts */
-.wip-chip { justify-self: start; background: var(--ink); color: var(--surface); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
 .draft-note { background: var(--ink); color: var(--surface); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); justify-self: stretch; text-align: start; }
 .site-head .brand { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
@@ -182,16 +181,80 @@ h1, p, figure { margin: 0; }
 .pager .next { flex: 2; background: var(--azure); }
 .pager button:disabled { visibility: hidden; }
 
-/* Gallery */
-.site-head { display: grid; gap: var(--space-2); padding-top: var(--space-4); }
+/* Adventure map: home and lab. A road per series, a stop per model (site.gallery_html). */
+.map-page {
+  min-height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: var(--space-4);
+  padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) max(var(--space-4), env(safe-area-inset-right, 0px)) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)) max(var(--space-4), env(safe-area-inset-left, 0px));
+}
+.site-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); }
+.brand-box, .map-title { display: grid; gap: var(--space-2); margin: 0; }
 .site-head .brand { height: var(--tap-min); width: auto; max-width: 100%; }
-.tagline { color: var(--ink-muted); }
-.grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); }
-@media (max-width: 479px) { .grid { grid-template-columns: minmax(0, 1fr); } }
-.model-card { display: grid; gap: var(--space-2); min-height: var(--tap-min); background: var(--surface); border-radius: var(--radius-md); padding: var(--space-4); color: var(--ink); text-decoration: none; }
-.model-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: var(--radius-sm); background: var(--paper); }
-.model-card .t-caption, .empty, .site-foot, .version { color: var(--ink-muted); }
-.site-foot { padding-top: var(--space-10); text-align: center; }
+.tagline, .empty, .site-foot, .version { color: var(--ink-muted); }
+.site-foot { text-align: center; }
+.map {
+  position: relative; overflow: hidden;
+  min-height: calc(var(--lanes) * (var(--stop) + 3 * var(--space-10)));
+  min-width: calc(var(--cols) * (var(--stop) + var(--space-6)));
+}
+.roads { position: absolute; inset: 0; width: 100%; height: 100%; }
+.roads path { fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.road-edge { stroke: var(--line); stroke-width: var(--tap-min); }
+.road { stroke: var(--surface); stroke-width: calc(var(--tap-min) - 2 * var(--space-2)); }
+.road-line { stroke: var(--yellow); stroke-width: var(--space-2); stroke-dasharray: 1 var(--space-6); }
+.branch { stroke: var(--azure); stroke-width: var(--space-2); stroke-dasharray: 1 var(--space-4); }
+.sign {
+  position: absolute; left: 0; margin: 0; transform: translateY(calc(var(--stop) / -2 - 100% - var(--space-4)));
+  background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4);
+}
+.stop {
+  position: absolute; transform: translate(-50%, calc(var(--stop) / -2));
+  display: grid; justify-items: center; gap: var(--space-2); color: var(--ink); text-decoration: none;
+}
+.stop .disc {
+  width: var(--stop); aspect-ratio: 1; border-radius: 50%; background: var(--surface); overflow: hidden;
+  display: grid; place-items: center; border: 6px solid var(--azure);
+}
+.stop .disc img { width: 92%; height: auto; }
+.stop.built .disc { border-color: var(--green); }
+.stop.locked .disc { border: 4px dashed var(--line); background: var(--paper); color: var(--ink-muted); }
+.stop .label { background: var(--surface); border-radius: var(--radius-pill); padding: 0 var(--space-4); white-space: nowrap; }
+.stop.locked .label { background: none; color: var(--ink-muted); }
+.stop .here, .stop .tick { display: none; position: absolute; left: 50%; border-radius: var(--radius-pill); padding: 0 var(--space-4); white-space: nowrap; }
+.stop .tick { top: 0; transform: translate(-50%, -50%); background: var(--green); color: var(--surface); }
+.stop.built .tick { display: block; }
+.stop .here { bottom: 100%; margin-bottom: var(--space-2); translate: -50% 0; background: var(--ink); color: var(--surface); animation: bob 1.4s ease-in-out infinite; }
+.stop.next .here { display: block; }
+@keyframes bob { 50% { transform: translateY(calc(-1 * var(--space-2))); } }
+@media (prefers-reduced-motion: reduce) { .stop .here { animation: none; } }
+
+/* Sheet that rises when a stop is tapped */
+.sheet {
+  position: fixed; z-index: 3; left: 0; right: 0; bottom: 0; max-width: var(--page-max); margin: 0 auto;
+  transform: translateY(100%); transition: transform 220ms ease-out;
+  background: var(--surface); border-radius: var(--radius-md) var(--radius-md) 0 0;
+  padding: var(--space-6) max(var(--space-6), env(safe-area-inset-right, 0px)) calc(var(--space-10) + env(safe-area-inset-bottom, 0px)) max(var(--space-6), env(safe-area-inset-left, 0px));
+  display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--space-6); align-items: center;
+}
+.sheet.on { transform: none; }
+@media (prefers-reduced-motion: reduce) { .sheet { transition: none; } }
+.sheet-img { width: 100%; border-radius: var(--radius-md); background: var(--paper); }
+.sheet .info { display: grid; gap: var(--space-2); justify-items: start; }
+.sheet h2 { margin: 0; }
+.sheet .from { color: var(--ink-muted); }
+.sheet .go {
+  min-height: var(--tap-min); padding: 0 var(--space-10); margin-top: var(--space-2); border-radius: var(--radius-pill);
+  display: inline-grid; place-items: center; background: var(--azure); color: var(--ink); text-decoration: none;
+}
+.sheet .x {
+  position: absolute; top: var(--space-2); right: var(--space-2); min-width: var(--tap-min); min-height: var(--tap-min);
+  background: none; border: 0; color: var(--ink-muted); cursor: pointer;
+}
+/* Clearing a build is deliberately small and needs two taps, so a child does not hit it by accident. */
+.sheet .clear {
+  position: absolute; right: var(--space-4); bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+  background: none; border: 0; padding: var(--space-2); color: var(--ink-muted); text-decoration: underline; cursor: pointer;
+}
+@media (max-width: 479px) { .sheet { grid-template-columns: minmax(0, 1fr); } }
 
 /* PDF (WeasyPrint): one card per page */
 @page { size: A4; margin: 12mm; }
@@ -214,6 +277,4 @@ h1, p, figure { margin: 0; }
   }
   .chapters { padding-left: max(var(--space-4), env(safe-area-inset-left, 0px)); padding-right: max(var(--space-4), env(safe-area-inset-right, 0px)); }
   .tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .gallery .wrap { max-width: var(--page-wide); }
-  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

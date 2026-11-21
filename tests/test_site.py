@@ -60,7 +60,7 @@ def test_print_mode_has_no_script_or_pager():
 
 def test_gallery_lists_cards_and_has_empty_state():
     html = gallery_html([GalleryCard("tank", "탱크 로봇", "tank/img/hero.png", 42, 12)])
-    assert 'href="tank/"' in html and "부품 42개 · 12단계" in html and "무엇을 만들까요?" in html
+    assert 'href="tank/"' in html and "부품 42개 · 12단계" in html and "어디로 가 볼까요?" in html
     assert 'rel="manifest"' in html
     assert "아직 완성된 작품이 없어요" in gallery_html([])
 
@@ -84,7 +84,7 @@ def test_gallery_logo_leads_to_the_hidden_lab():
 def test_lab_gallery_marks_every_card_as_in_progress_and_hides_from_search():
     html = gallery_html([GalleryCard("tank-1", "탱크 1호", "tank-1/img/hero.png", 114, 14)], lab=True)
     assert '<meta name="robots" content="noindex">' in html
-    assert "실험실" in html and "만드는 중" in html and 'href="tank-1/"' in html
+    assert "실험실" in html and 'href="tank-1/"' in html
     assert 'href="../assets/site.css"' in html and 'src="../brand/brick-steps-lockup.svg"' in html
     assert 'data-sw="../sw.js"' in html and 'href="../"' in html and "data-lab" not in html
     assert "실험실이 비어 있어요" in gallery_html([], lab=True)
@@ -331,3 +331,56 @@ def test_gallery_and_lab_footer_show_site_version_and_maker():
     for html in (gallery_html([], version="0.0.1"), gallery_html([], lab=True, version="0.0.1")):
         foot = html[html.index("<footer"):html.index("</footer>")]
         assert "Brick Steps 0.0.1" in foot and "만든 사람 Luke Lee" in foot
+
+
+MAP = [
+    GalleryCard("tank-1", "탱크 1호", "tank-1/img/hero.png", 114, 14, series="tank", number=1, story="울퉁불퉁한 길도 잘 가요."),
+    GalleryCard("tank-2", "탱크 2호", "tank-2/img/hero.png", 120, 16, series="tank", number=2, based_on="tank-1"),
+    GalleryCard("car-1", "자동차 1호", "car-1/img/hero.png", 60, 9, series="car", number=1, based_on="tank-1"),
+]
+
+
+def _stops(html: str) -> list[str]:
+    import re
+
+    return re.findall(r'<(?:a|span) class="stop[^"]*"[^>]*>', html)
+
+
+def test_home_is_a_map_with_a_road_per_series():
+    html = gallery_html(MAP)
+    assert 'class="map"' in html and 'class="roads"' in html
+    assert "탱크 길" in html and "자동차 길" in html
+    assert html.index("자동차 길") < html.index("탱크 길")  # series in id order: car, tank
+    stops = _stops(html)
+    assert len(stops) == 5  # three models and a 곧 나와요 stop at the end of each road
+    assert html.count("곧 나와요") == 2 and html.count('class="stop locked"') == 2
+    tank = [s for s in stops if 'href="tank-' in s]
+    assert 'href="tank-1/"' in tank[0] and 'href="tank-2/"' in tank[1]
+    assert all("left:" in s and "top:" in s for s in stops)
+
+
+def test_map_stops_carry_what_the_sheet_shows():
+    html = gallery_html(MAP)
+    stop = next(s for s in _stops(html) if 'href="tank-1/"' in s)
+    assert 'data-story="울퉁불퉁한 길도 잘 가요."' in stop and 'data-meta="부품 114개 · 14단계"' in stop
+    assert 'data-img="tank-1/img/hero.png"' in stop and 'data-name="탱크 1호"' in stop
+    car = next(s for s in _stops(html) if 'href="car-1/"' in s)
+    assert 'data-from="탱크 1호에서 나왔어요"' in car
+
+
+def test_map_joins_a_model_to_its_base_in_another_series_only():
+    html = gallery_html(MAP)
+    assert html.count('class="branch"') == 1
+
+
+def test_map_has_a_sheet_to_start_or_clear_a_build():
+    html = gallery_html(MAP)
+    sheet = html[html.index('<section class="sheet"'):]
+    sheet = sheet[:sheet.index("</section>")]
+    assert "hidden" in sheet[:sheet.index(">")]
+    assert "만들기 시작" in sheet and "‘다 만들었어요’ 표시 지우기" in sheet and 'class="go' in sheet
+
+
+def test_map_stops_have_next_and_built_marks_for_the_script():
+    html = gallery_html(MAP)
+    assert html.count("다음은 여기!") == 3 and html.count("✓ 다 만들었어요") == 3

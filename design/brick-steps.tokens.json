@@ -257,6 +257,11 @@
         "name": "side-panel",
         "value": "320px",
         "usage": "가로 배치에서 카드 왼쪽 정보 패널의 폭."
+      },
+      {
+        "name": "stop",
+        "value": "148px",
+        "usage": "모험 지도 정거장 원의 지름."
       }
     ]
   }
