@@ -12,6 +12,7 @@ All notable changes to this project are recorded here. The format follows
 - Models are named by series and number (`tank-1`, "탱크 1호"). `lc new <series>` picks the next number and `--from` starts from an existing model, `lc revise` records revisions with a date and note, and `lc list` shows every model with its status, revision and base model.
 - `lc validate` also checks a model's catalog fields and its missions.
 - After the finished model, manuals show "움직여 보기" mission cards: SPIKE App word blocks drawn in their palette colors, with a question that invites one change. The cover shows the model's one-line story.
+- Mission blocks look like the SPIKE App's: as wide as their words, joined by notches, a hat on event blocks, C-shaped repeat blocks, white number inputs and darker dropdowns.
 - A hidden lab at `/lab/` shows models that are still drafts, marked as untested. Tap the gallery logo five times to open it.
 
 ### Changed

@@ -42,14 +42,13 @@ class Block:
 
 
 # The Korean wording must match the SPIKE App word for word. `checked` blocks were compared with
-# a photo of the app (2026-11-22); the rest are guesses, and `lc validate` warns when a mission
+# photos of the app (2026-11-22); the rest are guesses, and `lc validate` warns when a mission
 # uses one. The app calls the movement palette 동작.
 BLOCKS: dict[str, Block] = {
     "when_program_starts": Block("events", "프로그램이 시작될 때", checked=True),
     "set_movement_motors": Block("movement", "동작 모터를 {0}(으)로 정하기", ("port", "port"), joined=True, checked=True),
     "set_movement_speed": Block("movement", "동작 속도를 {0}%로 정하기", ("number",), checked=True),
-    # The photo shows "↑ 방향으로 10 회전 만큼 움…"; the last word is cut off.
-    "move_for": Block("movement", "{0} 방향으로 {1} {2} 만큼 움직이기", ("direction", "number", "unit")),
+    "move_for": Block("movement", "{0} 방향으로 {1} {2} 만큼 움직이기", ("direction", "number", "unit"), checked=True),
     "start_moving": Block("movement", "{0} 방향으로 동작 시작하기", ("direction",), checked=True),
     "stop_moving": Block("movement", "이동 멈추기", checked=True),
     # The photo shows "A 모터 ↻ 방향으로 1 …"; the rest is cut off.
@@ -154,10 +153,17 @@ def _shown(kind: str, value: object) -> str:
 def _wording(b: BlockUse) -> str:
     spec = BLOCKS[b.block]
     slots = [_shown(k, a) for k, a in zip(spec.kinds, b.args)]
+    menus = [k != "number" for k in spec.kinds]
     if spec.joined:
-        slots = ["+".join(slots)]
-    return re.sub(r"\{(\d+)\}", lambda m: f'<span class="slot">{escape(slots[int(m.group(1))])}</span>',
-                  escape(spec.template, quote=False))
+        slots, menus = ["+".join(slots)], [any(menus)]
+
+    def slot(m: re.Match) -> str:
+        k = int(m.group(1))
+        if menus[k]:  # the app draws a choice as a dropdown in a darker shade of the block
+            return f'<span class="slot menu">{escape(slots[k])} ▾</span>'
+        return f'<span class="slot">{escape(slots[k])}</span>'
+
+    return re.sub(r"\{(\d+)\}", slot, escape(spec.template, quote=False))
 
 
 def blocks_html(blocks: tuple[BlockUse, ...]) -> str:
