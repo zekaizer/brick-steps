@@ -1,4 +1,4 @@
-# 탱크
+# 탱크 1호
 
 ## Purpose
 
@@ -28,4 +28,4 @@ None of this has been built. To confirm on the real parts:
 - **Wheel diameter and track width** in `main.py` are computed from the model (sprocket plus tread, 45 mm and 118 mm); calibrate them by driving a known distance.
 - **Cables.** The motors are drawn without cables. Both cables have to reach ports A and B at the hub.
 - **Turret.** One plain pin holds it; it may be too loose.
-- `scripts/ldraw_measure.py overlap tank` reports each motor against its frame. That is the box of the output boss; the motor body ends at the frame's inner face.
+- `scripts/ldraw_measure.py overlap tank-1` reports each motor against its frame. That is the box of the output boss; the motor body ends at the frame's inner face.

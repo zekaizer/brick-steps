@@ -1,4 +1,4 @@
-"""Print the `track.ldr` block of models/tank/model.mpd: tread links closed around two sprockets.
+"""Print the `track.ldr` block of models/tank-1/model.mpd: tread links closed around two sprockets.
 
 Usage: uv run python scripts/gen_tank_track.py
 The loop lies in the YZ plane at x = 0, around sprocket centers (y 0, z 0) and (y 0, z WHEELBASE).
