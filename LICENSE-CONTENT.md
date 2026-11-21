@@ -3,7 +3,7 @@
 The building designs in this repository are licensed under the
 [Creative Commons Attribution-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-sa/4.0/)
 (CC BY-SA 4.0). This covers the models in `models/`, the templates in `templates/`, the custom parts in
-`custom/` and the manuals generated from them.
+`custom/` and the manuals generated from them, and the Brick Steps logo in `design/brand/`.
 
 All other files (the `lc` tool, tests, scripts and site code) are under the MIT License in `LICENSE`.
 
