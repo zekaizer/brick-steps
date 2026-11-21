@@ -44,17 +44,27 @@ Copy matrices from this table instead of composing them by hand. Every entry has
 |---|---|
 | brick 3001 (2x4) | top center. Body spans y 0..24 and studs reach y -4. Long side on X |
 | plate 3020 (2x4) | top center. Body spans y 0..8 |
-| Technic beam 1xN thick (32523, 32316, 41239, 32278) | center. Length along **Z**, hole axis along **X**, 18 thick (X) by 20 tall (Y). Hole i (0-based) sits at z = (i − (N−1)/2)·20 |
+| Technic beam 1xN thick (32523 3L, 32316 5L, 32524 7L, 40490 9L, 32525 11L, 41239 13L, 32278 15L) | center. Length along **Z**, hole axis along **Y** (vertical), 18 wide (X) by 20 deep (Y). Hole i (0-based) sits at z = (i − (N−1)/2)·20. Use Rz+90 for holes along X, Ry+90 for a beam along X with vertical holes |
 | axle N (3705 = 4L) | center. Along **X**, length N·20 |
-| pin 61332 / axle pin 3749 / long pin 6558 | center. Along **X**, length 40 / 40 / 60 |
+| pin 61332 / plain pin 3673 / axle pin 3749 / long pin 6558 | center. Along **X**, length 40 / 40 / 40 / 60. The kit's 2L friction pin is 61332, not 2780 |
+| bush 3713 / half bush 32123b | center. Axis along **Z**, 20 / 10 long |
 | gears 32270, 18575, 46372, 32498 | center. Axis along **Z**, so a gear on an X axle needs Ry+90 or Ry-90 |
 | wheels 39367p01, 56903 | center. Axis along **Z** |
 | hub 45601c01 | bottom center. Body spans y -80..0, 140 on X (7 studs), 220 on Z (11 studs) |
 | 19x11 frame 39369 | center. Spans 220 on X, 380 on Z, 20 thick (Y) |
 
-With identity rotation, a pin or axle along X goes straight through a beam hole. A beam on identity therefore takes pins at the same (y, z) as a hole center, with x set to wherever the pin should stick out.
+A beam on identity has vertical holes, so a pin needs Rz+90 to go through it. A pin on identity goes through a beam placed with Rz+90.
 
-Motors and sensors have offset origins and attachment holes that this table does not cover. Measure their hole centers from the subfiles before placing one.
+Measure before placing anything that is not in these tables:
+
+```bash
+uv run python scripts/ldraw_measure.py bbox 39794 54675
+uv run python scripts/ldraw_measure.py holes 54675
+uv run python scripts/ldraw_measure.py slice 54675 Z 60 150
+uv run python scripts/ldraw_measure.py overlap <slug>
+```
+
+Hub, motor, frame and track holes are in [references/spike-parts.md](references/spike-parts.md).
 
 ## Gears (module 1 mm)
 

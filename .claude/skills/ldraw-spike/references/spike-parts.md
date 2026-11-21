@@ -13,7 +13,27 @@ Checked against `ldraw/parts` (official library, 2026-11-21) and Rebrickable inv
 | `37316c01` | Distance Sensor with Coiled Cable | 37316 | distance_sensor | -70..70 / -65..29 / -129..115 |
 | `37312c01` | Force Sensor with Coiled Cable | 37312 | force_sensor | -30..65 / -79..30 / -70..216 |
 
-The Z extents above include the cable. Bare variants without a cable (`54675`, `54696p01`, `37308`, ...) also work as port devices.
+The Z extents above include the cable. Bare variants without a cable (`54675`, `54696p01`, `37308`, ...) also work as port devices; use them when the fixed cable shape would mislead in a picture.
+
+### Large motor `54675` holes (measured)
+
+Body: X -50..50, Y -30..30, Z -30..150. The output boss is the only part that reaches Y -50; it is a disc of radius 29 around (x 0, z 0).
+
+- Output: axle hole along **Y** through (0, ·, 0), open at Y -50 and Y 30. Four pin holes on the rotating face at (±20, -50, 0) and (0, -50, ±20).
+- Through holes along Y (Y -30..30) at x ±40, z 0, 80, 120.
+- Holes along X on both side faces (x ±50) at y ±20, z -20, 20, 100, 140.
+- Holes along Z on the end faces at (±40, 0, -30) and (±40, 0, 150).
+- Lying on its side with the output outward: Rz+90 for the right motor (output towards +X), Rz-90 for the left. Two motors placed at x ±40 leave a 20 LDU gap for a beam between them.
+
+### Hub `45601c01` holes (measured)
+
+Bottom center origin. Vertical holes on the bottom face (y 0) at (±60, ±100), (±20, ±100) and (±60, ±60); on the top face at (±60, -80, ±100). Holes along Z on both ends at x ±40, y -10, -30, -50. Holes along X on the sides at (±70, -50, ±80).
+
+### Frame `39794` (11 x 7) holes (measured)
+
+Flat in XZ, 20 thick on Y, X -70..70, Z -110..110. Holes alternate around the rim:
+- through the plane (along Y) every 40 LDU: x ±60 at z ±100, ±60, ±20, and x ±20 at z ±100;
+- in the plane: along X through the long sides at z 0, ±40, ±80; along Z through the short sides at x 0, ±40.
 
 Do not use these aliases: `54696c01` (moved to 54696p01c01) and `u9393c01` (moved to 45601).
 
@@ -66,5 +86,6 @@ Source: product page (SKU CM0047B), read 2026-11-22. The board has no LDraw part
 
 Identified from photos. Exact counts are unknown; the owner reports enough for one two-track tank:
 - Tread links: use `57518` (Technic Chain Tread 5 Wide). The photos cannot tell it apart from the reinforced `88323`, and both have the same geometry. The hinge-loop side is the inner side that meshes with the sprocket.
-- Sprocket: `57519` (Technic Sprocket Wheel 40.4). It has 6 pin holes around the center axle hole, measures 102 LDU in diameter and 36 LDU wide, and its axis is along Z.
+- Sprocket: `57519` (Technic Sprocket Wheel 40.4). It has 6 pin holes at radius 20 around the center axle hole, measures 102 LDU in diameter and 36 LDU wide, and its axis is along Z.
+- Tread link `57518` frame: hinge pin at the origin, body towards -Z, tread face towards -Y, 96 wide on X. The link pitch is taken as 30 LDU and the hinge circle on the sprocket as radius 48.5 (10 links around); both are inferred from the geometry, not checked on the real parts. `scripts/gen_tank_track.py` places a closed loop.
 - The same photos show the large turntable (`18938` top and `18939` base) and the quarter gear ring `24121`, but these come from 45681 and are not part of this set.
