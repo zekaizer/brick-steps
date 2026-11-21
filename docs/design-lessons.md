@@ -21,6 +21,8 @@ What building models has taught us, so the next model does not relearn it. The `
 
 - **Keep structure away from a motor's output face.** The large motor's output boss is a disc of radius 29 that stands 20 LDU proud. Pin frames to the holes at z 80 and 120, behind the boss. (tank-1, 2026-11-22, unverified)
 - **Leave the hub's top face open.** The buttons and the light matrix are there, and a child has to reach them to start a program. Put a turret or a sensor mast next to the hub, not on it. (tank-1, 2026-11-22)
+- **Put every port device in the same submodel as the hub.** The manual's cable card only lists devices placed next to the hub; tank 2's turret motor in its own submodel was left off the card. (tank-2, 2026-11-22)
+- **The hub's height sets the hull roof.** On its motors the hub's top is at y -150, so anything that turns above it starts there. Sink a turntable into the hull with its top face level with the hub's top, rather than stacking it on top. (tank-2, 2026-11-22, unverified)
 - **Draw motors without their cable when the cable is not the point.** The cabled part has a rigid coil that sticks 160 LDU out of the model. (tank-1, 2026-11-22)
 
 ## Tracks
@@ -28,9 +30,16 @@ What building models has taught us, so the next model does not relearn it. The `
 - **Choose the wheelbase from the link pitch, then find holes for it.** A loop is 2 × wheelbase + 10 links around the sprockets, so it closes exactly only when the wheelbase is a multiple of 15 LDU. Holes on the 20 LDU grid give that only at multiples of 60. The tank's 280 LDU needs 28.8 links and gets 29, slightly loose. (tank-1, 2026-11-22, unverified)
 - **The tread is wider than the sprocket.** A 96 LDU link on a 36 LDU sprocket reaches 30 LDU past it on each side, so nothing else may stand within that band at track height. (tank-1, 2026-11-22)
 
+- **A track that wraps more wheels needs more links.** Every wheel off the straight line between two sprockets lengthens the loop; tank 4's rhombus needs 35 links a side against tank 1's 29. Count the owned links before choosing the shape. `scripts/gen_tank_rhombus_track.py` wraps any convex set of wheels. (tank-4, 2026-11-22, unverified)
+- **Let a sprung road wheel take up the slack.** Choose one link more than the loop needs and let a rubber band press a road wheel into the ground run. (tank-4, 2026-11-22, unverified)
+
 ## Moving parts
 
 - **Build each part group that turns as its own sub-assembly, and declare it.** Then `lc validate` turns it through its range and checks the floor (`0 !LC TURN`, `0 !LC GROUND`, ldraw-spike skill); it is also the natural callout for children. (tank-1, 2026-11-22)
+
+- **Look for overlaps at 0° yourself.** The turn check skips pairs that already touch at 0°, as joints. Tank 2's turntable top cut 7 LDU into the hub from the start, and only `ldraw_measure.py overlap` showed it. (tank-2, 2026-11-22)
+- **A turntable is both bearing and drive.** Its open centre lets a motor below drive the turret straight through an axle and a 28-tooth gear, with no gear mesh to guess. (tank-2, 2026-11-22, unverified)
+- **Expect turn warnings around round parts.** The box of a turntable's disc sweeps corners the disc never reaches; compare the radius with the distance by hand and write the result in `spec.md`. (tank-2, 2026-11-22)
 
 ## Kits
 

@@ -25,6 +25,14 @@ Body: X -50..50, Y -30..30, Z -30..150. The output boss is the only part that re
 - Holes along Z on the end faces at (±40, 0, -30) and (±40, 0, 150).
 - Lying on its side with the output outward: Rz+90 for the right motor (output towards +X), Rz-90 for the left. Two motors placed at x ±40 leave a 20 LDU gap for a beam between them.
 
+### Medium motor `54696p01` holes (measured)
+
+Body: X -30..30, Y -30..30, Z -29..150; the output boss (radius 29) reaches Y -50.
+
+- Output: axle hole along **Y** through (0, ·, 0), open at Y -50 and Y 30. Four pin holes on the rotating face at (±20, -50, 0) and (0, -50, ±20), the same square as a 3 x 3 connector or a 28-tooth gear.
+- Holes along X on both side faces (x ±30) at y ±20, z -20, 20 and 140. Holes along Z on the rear end at (±20, 0, 150). The cable leaves the housing at (0, 0, 150).
+- Standing with the output up (identity), it is 80 tall with the boss and 180 long on Z.
+
 ### Hub `45601c01` ports (measured, letters from a real hub)
 
 USB and the Bluetooth button are at +Z, the Bluetooth button on +X. The six port sockets face out of the long sides at x ±70, y -68, z 40/0/-40. A/C/E are on -X and B/D/F on +X, A and B at the +Z end: with the Bluetooth end up, the left side reads A, C, E from the top. `src/lego_creator/cables.py` holds these points. The large motor's cable leaves the housing at (0, 14, 150).
@@ -40,6 +48,21 @@ Flat in XZ, 20 thick on Y, X -70..70, Z -110..110. Holes alternate around the ri
 - in the plane: along X through the long sides at z 0, ±40, ±80; along Z through the short sides at x 0, ±40.
 
 Do not use these aliases: `54696c01` (moved to 54696p01c01) and `u9393c01` (moved to 45601).
+
+## Turning and covering parts (measured)
+
+| part | frame and holes |
+|---|---|
+| turntable top `18938` (60 teeth) | centre origin. Y -30..10, radius 77. Teeth: pitch radius 75, band y -5..10. Side holes along X at (±50, -20, z -20/0/20). Open centre, radius 30 |
+| turntable base `18939` | same origin as the top. Y -5..30, flange radius 67 down to y 12, block x ±50, z ±30 below it. Side holes along X at (±50, 20, z -20/0/20). Open centre, radius 30 |
+| 5 x 7 frame `64179` turned Ry+90 | its opening is x ±50, z ±30, the turntable base's block. The in-plane holes at (x ±50..±70, z -20/0/20) meet the base's side holes |
+| 28-tooth gear `46372` | axle hole at the centre and four pin holes at (±20, 0), (0, ±20); turned Rx+90 it lies flat and couples a vertical axle to a 3 x 3 square of pins |
+| 36-tooth gear `32498` | radius 47; an axle hole at the centre and pin holes at (±20, 0) |
+| curved panel `11954` (11 x 3) | flange at y 0..10 with pin holes along Y at (0, 10, z 0/±40/±80); curves up to y -49 leaning to -X. Long side on Z (±110) |
+| panel `15458` (3 x 11) | X ±110, Z ±30, 20 thick; pin holes along Z through the long edges every 20 |
+| rubber belt `85543` (15 mm) | a ring of radius 21 in the XY plane |
+
+A gear of 20 teeth meshes with the turntable's 60 at 100 LDU from its centre (module 1).
 
 ## SPIKE-specific structural parts in 45678
 
