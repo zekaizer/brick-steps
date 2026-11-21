@@ -27,6 +27,14 @@ class StepView:
 
 
 @dataclass(frozen=True)
+class MissionView:
+    title: str
+    goal: str
+    blocks: str  # HTML from missions.blocks_html
+    try_: str = ""
+
+
+@dataclass(frozen=True)
 class ManualView:
     slug: str
     name: str
@@ -37,6 +45,8 @@ class ManualView:
     model3d: str | None = None
     main_sub: str | None = None
     done_shown: int = 0
+    intro: str | None = None
+    missions: list[MissionView] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -116,7 +126,8 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
         '<section class="card cover" id="cover">'
         f'<h1 class="t-title">{_e(view.name)}</h1>'
         f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}">'
-        f'<p class="t-body">부품 {view.part_count}개 · {total}단계</p>'
+        + (f'<p class="t-body intro">{_e(view.intro)}</p>' if view.intro else "")
+        + f'<p class="t-body">부품 {view.part_count}개 · {total}단계</p>'
         + (f'<p class="t-caption"><a href="{_e(view.pdf)}">PDF로 보기</a></p>' if view.pdf and not print_mode else "")
         + "</section>"
     ]
@@ -143,6 +154,16 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
         + ('<p class="t-caption credit">부품 모양은 LDraw.org Parts Library(CC BY 4.0)에서 왔어요.</p>' if with_3d else "")
         + "</section>"
     )
+    for k, mission in enumerate(view.missions, 1):
+        cards.append(
+            f'<section class="card mission" id="mission-{k}">'
+            f'<p class="mission-label t-caption">움직여 보기 {k} / {len(view.missions)}</p>'
+            f'<h2 class="t-heading">{_e(mission.title)}</h2>'
+            + (f'<p class="t-body">{_e(mission.goal)}</p>' if mission.goal else "")
+            + mission.blocks
+            + (f'<p class="try t-body">{_e(mission.try_)}</p>' if mission.try_ else "")
+            + "</section>"
+        )
     if print_mode:
         body_attrs = ' class="manual print"'
     else:

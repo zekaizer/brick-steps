@@ -60,6 +60,21 @@ h1, p, figure { margin: 0; }
 .credit { color: var(--ink-muted); }
 @media (prefers-reduced-motion: reduce) { .stage3d .hint { transition: none; } }
 
+/* Mission cards: SPIKE App word blocks (ADR 0003) */
+.intro { text-wrap: balance; }
+.mission-label { color: var(--ink-muted); }
+.blocks, .repeat-body { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.block { border-radius: var(--radius-sm); color: var(--ink); }
+.block-text { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); }
+.block.c { padding-bottom: var(--space-4); }
+.repeat-body { margin-left: var(--space-6); }
+.block.events { background: var(--block-events); }
+.block.control { background: var(--block-control); }
+.block.movement { background: var(--block-movement); }
+.block.motors { background: var(--block-motors); }
+.slot { background: var(--surface); color: var(--ink); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
+.try { background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); }
+
 /* Finished */
 .badge { background: var(--green); color: var(--surface); border-radius: var(--radius-pill); padding: var(--space-2) var(--space-6); }
 

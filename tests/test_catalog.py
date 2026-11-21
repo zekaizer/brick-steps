@@ -1,10 +1,8 @@
 from lego_creator.catalog import (
     check_catalog,
-    check_programs,
     model_slug,
     new_meta,
     next_number,
-    program_ports,
     revise,
     updated,
 )
@@ -64,15 +62,3 @@ def test_catalog_flags_missing_and_cyclic_base():
 
 def test_catalog_flags_version_that_disagrees_with_the_revision_list():
     assert codes(check_catalog("tank-1", {"tank-1": meta(version=3)})) == [("error", "revision-mismatch")]
-
-
-def test_program_ports_are_read_from_pybricks_code():
-    text = "drive_left = Motor(Port.A, Direction.COUNTERCLOCKWISE)\nright = Motor(Port.B)\n# Port.F is free\n"
-    assert program_ports(text) == {"A", "B"}
-
-
-def test_programs_may_only_use_declared_ports():
-    programs = {"main.py": "Motor(Port.A)\nMotor(Port.C)\n", "ok.py": "Motor(Port.B)\n"}
-    issues = check_programs(programs, {"A", "B"})
-    assert codes(issues) == [("error", "program-port-undeclared")]
-    assert "main.py" in issues[0].message and "C" in issues[0].message

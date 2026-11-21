@@ -38,8 +38,11 @@ def test_build_site_end_to_end(tmp_path):
     for slug, status in (("bot", "ready"), ("wip", "draft")):
         d = root / "models" / slug
         d.mkdir(parents=True)
-        (d / "model.yaml").write_text(f"name: 테스트 봇\nstatus: {status}\nkits: {{45678-1: 1}}\n")
+        (d / "model.yaml").write_text(f"name: 테스트 봇\nstatus: {status}\nkits: {{45678-1: 1}}\n"
+                                      "story:\n  intro: 보드를 지켜요.\n")
         (d / "model.mpd").write_text(MODEL)
+        (d / "missions.yaml").write_text("- title: 기다리기\n  goal: 잠깐 쉬어요.\n  blocks:\n"
+                                         "  - [when_program_starts]\n  - [wait, 1]\n")
     tokens = json.loads((ROOT / "design" / "brick-steps.tokens.json").read_text(encoding="utf-8"))
     env = ExportEnv(ROOT / "ldraw", ROOT / "custom", tokens, tmp_path / "cfg")
     out = tmp_path / "site"
@@ -61,6 +64,7 @@ def test_build_site_end_to_end(tmp_path):
         assert (out / "bot" / src).resolve().is_file(), src
     assert (out / "bot" / "manual.pdf").read_bytes()[:4] == b"%PDF"
     assert 'data-sub="board.ldr" data-shown="3" data-fresh="2"' in page
+    assert "보드를 지켜요." in page and 'id="mission-1"' in page and 'data-block="wait"' in page
     packed = (out / "bot" / "model3d.txt").read_text(encoding="utf-8")
     for name in ("main.ldr", "board.ldr", "64179.dat", "lms-esp32v2.dat"):
         assert f"0 FILE {name}\n" in packed, name

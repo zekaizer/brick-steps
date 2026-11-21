@@ -14,11 +14,13 @@ import yaml
 from .design import tokens_css
 from .instructions import build_mpd, plan
 from .ldraw import Library, flatten, parse, step_groups
+from .missions import blocks_html, parse_missions
 from .pack3d import pack_model
 from .render import render_image, render_steps
 from .site import (
     GalleryCard,
     ManualView,
+    MissionView,
     StepView,
     TrayItem,
     gallery_html,
@@ -93,9 +95,18 @@ def _render_thumbs(keys: set[tuple[str, int]], thumbs_dir: Path, env: ExportEnv)
         return dict(pool.map(one, sorted(keys)))
 
 
+def load_mission_views(model_dir: Path) -> list[MissionView]:
+    """Mission cards from models/<slug>/missions.yaml; `lc validate` reports problems in it."""
+    path = model_dir / "missions.yaml"
+    if not path.exists():
+        return []
+    missions, _ = parse_missions(yaml.safe_load(path.read_text(encoding="utf-8")) or [])
+    return [MissionView(m.title, m.goal, blocks_html(m.blocks), m.try_) for m in missions]
+
+
 def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: Path, *, thumbs_dir: Path,
                  thumbs_href: str, assets_href: str, sw_href: str | None, manifest_href: str | None,
-                 pdf: bool) -> GalleryCard:
+                 pdf: bool, intro: str | None = None, missions: list[MissionView] | None = None) -> GalleryCard:
     """Render and write one manual into out_dir (index.html, img/, optional manual.pdf)."""
     doc = parse(mpd_text, default_name=f"{slug}.ldr")
     sections = plan(doc)
@@ -141,7 +152,8 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
     shutil.copyfile(final_of[main], hero)
     (out_dir / MODEL_3D).write_text(pack_model(mpd_text, main, [env.ldraw, env.custom]), encoding="utf-8")
     view = ManualView(slug, name, sum(flatten(doc).values()), rel(hero), steps, "manual.pdf" if pdf else None,
-                      model3d=MODEL_3D, main_sub=main, done_shown=len(doc.main.refs))
+                      model3d=MODEL_3D, main_sub=main, done_shown=len(doc.main.refs), intro=intro,
+                      missions=missions or [])
     (out_dir / "index.html").write_text(
         manual_html(view, assets=assets_href, sw=sw_href, manifest=manifest_href), encoding="utf-8"
     )
@@ -181,6 +193,7 @@ def build_site(root: Path, out: Path, env: ExportEnv, *, include_drafts: bool, p
             meta.get("name", slug), slug, (meta_path.parent / "model.mpd").read_text(encoding="utf-8"), env,
             out / slug, thumbs_dir=out / "parts", thumbs_href="../parts/", assets_href="../assets/",
             sw_href="../sw.js", manifest_href="../manifest.webmanifest", pdf=pdf,
+            intro=(meta.get("story") or {}).get("intro"), missions=load_mission_views(meta_path.parent),
         ))
     (out / "index.html").write_text(gallery_html(cards), encoding="utf-8")
     return cards

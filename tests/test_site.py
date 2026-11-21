@@ -3,6 +3,7 @@ import json
 from lego_creator.site import (
     GalleryCard,
     ManualView,
+    MissionView,
     StepView,
     TrayItem,
     gallery_html,
@@ -130,3 +131,39 @@ def test_manual_html_without_3d_or_in_print_has_no_3d_hooks():
     for html in (manual_html(VIEW, assets="./"), manual_html(VIEW_3D, assets="./", print_mode=True)):
         assert "data-model3d" not in html and "viewer3d.js" not in html and "importmap" not in html
         assert "data-sub" not in html
+
+
+VIEW_STORY = ManualView(
+    slug="tank-1",
+    name="탱크 1호",
+    part_count=10,
+    hero="img/hero.png",
+    steps=[StepView(1, "img/s0-01.png")],
+    intro="울퉁불퉁한 길도 잘 가요.",
+    missions=[
+        MissionView("앞뒤로 달리기", "앞으로 갔다가 돌아와요.", '<ol class="blocks"><li>B</li></ol>', "2를 3으로 바꾸면?"),
+        MissionView("빙글 돌기", "제자리에서 돌아요.", '<ol class="blocks"><li>C</li></ol>', ""),
+    ],
+)
+
+
+def test_manual_html_tells_the_story_on_the_cover():
+    html = manual_html(VIEW_STORY, assets="./")
+    cover = html[html.index('id="cover"'):html.index('id="step-1"')]
+    assert "울퉁불퉁한 길도 잘 가요." in cover
+
+
+def test_manual_html_adds_a_card_per_mission_after_the_finished_model():
+    html = manual_html(VIEW_STORY, assets="./")
+    assert html.index('id="done"') < html.index('id="mission-1"') < html.index('id="mission-2"')
+    one = html[html.index('id="mission-1"'):html.index('id="mission-2"')]
+    assert 'class="card mission"' in one and "움직여 보기 1 / 2" in one
+    assert "앞뒤로 달리기" in one and "앞으로 갔다가 돌아와요." in one and "<li>B</li>" in one
+    assert "2를 3으로 바꾸면?" in one
+    two = html[html.index('id="mission-2"'):]
+    assert 'class="try' not in two
+
+
+def test_manual_html_keeps_missions_in_print():
+    html = manual_html(VIEW_STORY, assets="./", print_mode=True)
+    assert 'id="mission-1"' in html and 'id="mission-2"' in html

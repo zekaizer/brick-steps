@@ -13,7 +13,7 @@ Brick Steps is a set of original robots for LEGO® SPIKE™ Prime, designed toge
 
 ## What's here
 
-- `models/`: one folder per robot. It holds the LDraw model (`model.mpd`), design notes and the Pybricks program.
+- `models/`: one folder per robot. It holds the LDraw model (`model.mpd`), design notes and the missions: SPIKE App blocks to try once the robot is built.
 - `lc validate <model>`: checks a model against the LDraw library and the kits it may use, including parts, colors, rotations and hub ports.
 - `lc site`: renders every step with LeoCAD and builds the manual site and PDFs that GitHub Pages serves. On the site, each step is also a 3D model that can be turned with a finger.
 - `design/`: the Brick Steps design tokens and logo, synced from the design system.
