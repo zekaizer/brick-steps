@@ -6,6 +6,9 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- The GitHub Pages build no longer fails in its container: git now trusts the checkout, so the site deploys.
+
 ## [0.0.1] - 2026-11-22
 
 First beta.

@@ -30,6 +30,10 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             ca-certificates git leocad xvfb xauth libpango-1.0-0 libpangoft2-1.0-0 fonts-noto-cjk
       - uses: actions/checkout@v4
+      # The container runs as root but the checkout belongs to the runner user; without this,
+      # git refuses the repository ("dubious ownership") and tests that list files fail.
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: astral-sh/setup-uv@v6
       - name: Cache LDraw library
         id: ldraw
