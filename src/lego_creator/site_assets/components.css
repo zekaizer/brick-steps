@@ -98,18 +98,20 @@ h1, p, figure { margin: 0; }
 }
 
 /* Step */
-.step-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
-.step-head .t-caption { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+/* The total sits right after the big number, so "4 / 15 단계" reads as one phrase. */
+.step-head { display: flex; align-items: baseline; gap: var(--space-4); }
+.step-total { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .sub-label { justify-self: start; background: var(--magenta); color: var(--surface); border-radius: var(--radius-pill); padding: var(--space-2) var(--space-4); }
 
 /* Parts tray */
 .tray { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--line); }
 .tray-head { background: var(--yellow); color: var(--ink); padding: var(--space-2) var(--space-4); }
 .tray ul { list-style: none; margin: 0; padding: var(--space-4); display: flex; flex-wrap: wrap; gap: var(--space-4); }
-.tray li { display: flex; align-items: center; gap: var(--space-2); }
+/* The count sits on the thumbnail's corner, so two parts fit side by side in the landscape panel. */
+.tray li { position: relative; padding: 0 var(--space-2) var(--space-2) 0; }
 .tray img { width: var(--thumb); height: var(--thumb); object-fit: contain; border-radius: var(--radius-sm); background: var(--paper); }
 .tray li.sub img { outline: 3px solid var(--magenta); outline-offset: -3px; }
-.count { background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2); font-family: var(--font-display); }
+.count { position: absolute; right: 0; bottom: 0; background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2); font-family: var(--font-display); }
 
 .step-img img { width: 100%; height: auto; display: block; border-radius: var(--radius-md); background: var(--paper); }
 
@@ -186,10 +188,18 @@ h1, p, figure { margin: 0; }
   min-height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: var(--space-4);
   padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) max(var(--space-4), env(safe-area-inset-right, 0px)) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)) max(var(--space-4), env(safe-area-inset-left, 0px));
 }
-.site-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); }
-.brand-box, .map-title { display: grid; gap: var(--space-2); margin: 0; }
+.site-head { display: grid; gap: var(--space-4); justify-items: start; }
+.brand-box { display: grid; gap: var(--space-2); }
+.map-title { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); }
+.map-title h1, .map-title p { margin: 0; }
+.back {
+  min-height: var(--tap-min); padding: 0 var(--space-6); border-radius: var(--radius-pill); display: inline-grid; place-items: center;
+  background: var(--surface); border: 3px solid var(--azure-deep); color: var(--ink); text-decoration: none;
+}
 .site-head .brand { height: var(--tap-min); width: auto; max-width: 100%; }
-.tagline, .empty, .site-foot, .version { color: var(--ink-muted); }
+.tagline, .site-foot, .version, .map-title .t-body { color: var(--ink-muted); }
+.empty { align-self: center; justify-self: center; display: grid; justify-items: center; gap: var(--space-2); text-align: center; }
+.empty .t-body { color: var(--ink-muted); }
 .site-foot { text-align: center; }
 .map {
   position: relative; overflow: hidden;
@@ -275,6 +285,7 @@ h1, p, figure { margin: 0; }
     bottom: calc(2 * var(--space-4) + env(safe-area-inset-bottom, 0px));
     width: var(--side-panel); padding: 0; background: none;
   }
+  .deck.js .mission .main { place-items: center; }
   .chapters { padding-left: max(var(--space-4), env(safe-area-inset-left, 0px)); padding-right: max(var(--space-4), env(safe-area-inset-right, 0px)); }
   .tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
