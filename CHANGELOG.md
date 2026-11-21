@@ -7,6 +7,7 @@ All notable changes to this project are recorded here. The format follows
 ## [Unreleased]
 
 ### Added
+- `lc validate` warns when a moving sub-assembly declared with `0 !LC TURN` runs into the rest of the model within its declared range, and when a part comes within a plate of the floor set by `0 !LC GROUND` (wheels, tracks). Both are box approximations.
 - Brick Steps branding: a logo of two stacked bricks with sparkles, the tagline "AI와 함께 만들고, 한 단계씩 따라 해요", app and maskable icons, and favicons. The gallery shows the logo and tagline.
 - Manuals show each step as a 3D model that can be turned with a finger. New parts drop into place with a yellow outline, and the finished model turns on the last screen. Devices without WebGL, and the PDF, keep the rendered pictures.
 - Models are named by series and number (`tank-1`, "탱크 1호"). `lc new <series>` picks the next number and `--from` starts from an existing model, `lc revise` records revisions with a date and note, and `lc list` shows every model with its status, revision and base model.
@@ -19,6 +20,7 @@ All notable changes to this project are recorded here. The format follows
 - A hidden lab at `/lab/` shows models that are still drafts, marked as untested. Tap the gallery logo five times to open it.
 
 ### Changed
+- 탱크 1호 builds its turret head (cross block and barrels) as a small sub-assembly before setting it on the pin.
 - The home page and the lab are an adventure map instead of a list: a road per series with a stop per model, a 곧 나와요 stop at the end, and dotted lines to the model another series grew from. Tapping a stop opens a sheet with the story and a start button. Stops reached to the finished screen on this device show ✓ 다 만들었어요, which a small two-tap link in the sheet can clear (the model itself stays), and the first unbuilt stop says 다음은 여기!
 - Manuals fit one card on the iPad mini screen without scrolling, in portrait and in landscape. In landscape the step number, parts and buttons sit in a panel beside a larger picture, and the gallery shows three models per row.
 - `lc site` always builds drafts into the lab; `--include-drafts` is gone.

@@ -28,6 +28,10 @@ What building models has taught us, so the next model does not relearn it. The `
 - **Choose the wheelbase from the link pitch, then find holes for it.** A loop is 2 × wheelbase + 10 links around the sprockets, so it closes exactly only when the wheelbase is a multiple of 15 LDU. Holes on the 20 LDU grid give that only at multiples of 60. The tank's 280 LDU needs 28.8 links and gets 29, slightly loose. (tank-1, 2026-11-22, unverified)
 - **The tread is wider than the sprocket.** A 96 LDU link on a 36 LDU sprocket reaches 30 LDU past it on each side, so nothing else may stand within that band at track height. (tank-1, 2026-11-22)
 
+## Moving parts
+
+- **Build each part group that turns as its own sub-assembly, and declare it.** Then `lc validate` turns it through its range and checks the floor (`0 !LC TURN`, `0 !LC GROUND`, ldraw-spike skill); it is also the natural callout for children. (tank-1, 2026-11-22)
+
 ## Kits
 
 - **Count electronics per set before choosing kits.** One 45678 has a single large motor; a two-motor drive needs two sets or the 45681 expansion. (tank-1, 2026-11-22)

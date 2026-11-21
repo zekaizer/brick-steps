@@ -36,6 +36,12 @@ def test_step_outputs_maps_numbered_files(tmp_path):
     assert step_outputs(tmp_path / "s.png") == {1: tmp_path / "s01.png", 2: tmp_path / "s02.png", 10: tmp_path / "s10.png"}
 
 
+def test_step_outputs_takes_the_plain_file_for_a_single_step(tmp_path):
+    # LeoCAD drops the step number when the range is one step long.
+    (tmp_path / "s.png").write_bytes(b"x")
+    assert step_outputs(tmp_path / "s.png") == {1: tmp_path / "s.png"}
+
+
 @pytest.mark.skipif(shutil.which("leocad") is None or not (ROOT / "ldraw" / "parts").is_dir(), reason="needs leocad and ldraw/")
 def test_render_steps_with_leocad(tmp_path):
     mpd = tmp_path / "m.mpd"

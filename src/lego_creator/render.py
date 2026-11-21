@@ -43,12 +43,14 @@ def leocad_cmd(mpd: Path, out_png: Path, libpath: Path, *, width: int, height: i
 
 
 def step_outputs(out_png: Path) -> dict[int, Path]:
-    """Files LeoCAD wrote for a step range: <stem>NN.png next to out_png."""
+    """Files LeoCAD wrote for a step range: <stem>NN.png next to out_png, or out_png itself for a single step."""
     pattern = re.compile(rf"^{re.escape(out_png.stem)}(\d+){re.escape(out_png.suffix)}$")
     found = {}
     for p in out_png.parent.iterdir():
         if m := pattern.match(p.name):
             found[int(m.group(1))] = p
+    if not found and out_png.exists():
+        return {1: out_png}
     return dict(sorted(found.items()))
 
 
