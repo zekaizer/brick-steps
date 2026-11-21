@@ -175,6 +175,14 @@
   function back() { show(current - 1, -1); }
 
   deck.classList.add("js");
+  // Keep the screen on while a child builds: the iPad sits on the table between taps.
+  // Wake locks end when the page is hidden, so take it again on return. Unsupported browsers just skip this.
+  function stayAwake() {
+    if (document.visibilityState !== "visible" || !navigator.wakeLock) return;
+    navigator.wakeLock.request("screen").catch(function () {});
+  }
+  document.addEventListener("visibilitychange", stayAwake);
+  stayAwake();
   pager.hidden = false;
   prev.addEventListener("click", back);
   next.addEventListener("click", forward);
