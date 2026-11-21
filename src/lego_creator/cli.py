@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import datetime
 import gzip
 import io
 import json
@@ -20,8 +21,10 @@ from pathlib import Path
 import yaml
 
 from .bom import Bom, load_id_map, load_inventory, load_unknown_parts
+from .catalog import check_catalog, check_programs, model_slug, new_meta, next_number, revise, updated
 from .export import ExportEnv, build_manual, build_site, write_assets
 from .ldraw import Library, flatten, parse
+from .ports import parse_ports
 from .rebrickable import extract_set_inventory
 from .release import check_release, release_notes
 from .validate import validate
@@ -96,21 +99,79 @@ def _load_kits(root: Path, kits: dict[str, int]) -> Bom:
     return available
 
 
+def _all_metas(root: Path) -> dict[str, dict]:
+    return {p.parent.name: yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+            for p in sorted((root / "models").glob("*/model.yaml"))}
+
+
+def _write_meta(d: Path, meta: dict) -> None:
+    (d / "model.yaml").write_text(yaml.safe_dump(meta, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _numbered_name(name: str | None, base_name: str | None, series: str, number: int) -> str:
+    """Display name with the number: Korean names read "탱크 2호", others "Tank 2"."""
+    if name is None and base_name is not None:
+        name = re.sub(r"\s*\d+호?$", "", base_name)
+    if name is None:
+        name = series.replace("-", " ").title()
+    return f"{name} {number}호" if re.search(r"[가-힣]", name) else f"{name} {number}"
+
+
 def cmd_new(root: Path, _lib: Library, args: argparse.Namespace) -> int:
-    if not SLUG_RE.match(args.slug):
-        return _fail(f"slug must match {SLUG_RE.pattern}")
-    d = root / "models" / args.slug
+    if not SLUG_RE.match(args.series):
+        return _fail(f"series must match {SLUG_RE.pattern}")
+    metas = _all_metas(root)
+    base = metas.get(args.base) if args.base else None
+    if args.base and base is None:
+        return _fail(f"--from {args.base}: no such model")
+    number = next_number(metas, args.series)
+    d = root / "models" / model_slug(args.series, number)
     if d.exists():
         return _fail(f"{d} already exists")
     (d / "program").mkdir(parents=True)
-    name = args.name or args.slug.replace("-", " ").title()
-    kits = _kit_counts(args.kit) if args.kit else _owned_kits(root)
-    meta = {"name": name, "kits": kits, "status": "draft", "version": 1}
-    (d / "model.yaml").write_text(yaml.safe_dump(meta, sort_keys=False), encoding="utf-8")
-    (d / "model.mpd").write_text(MPD_TEMPLATE.format(name=name, author=args.author), encoding="utf-8")
+    name = _numbered_name(args.name, base and base.get("name"), args.series, number)
+    if args.kit:
+        kits = _kit_counts(args.kit)
+    else:
+        kits = _kit_counts(base.get("kits")) if base else _owned_kits(root)
+    _write_meta(d, new_meta(name, args.series, number, kits, datetime.date.today().isoformat(), args.base))
+    if base:
+        src = root / "models" / args.base
+        shutil.copyfile(src / "model.mpd", d / "model.mpd")
+        shutil.copytree(src / "program", d / "program", dirs_exist_ok=True)
+    else:
+        (d / "model.mpd").write_text(MPD_TEMPLATE.format(name=name, author=args.author), encoding="utf-8")
+        (d / "program" / "main.py").write_text(PROGRAM_TEMPLATE, encoding="utf-8")
     (d / "spec.md").write_text(SPEC_TEMPLATE.format(name=name), encoding="utf-8")
-    (d / "program" / "main.py").write_text(PROGRAM_TEMPLATE, encoding="utf-8")
     print(f"created {d}")
+    return 0
+
+
+def cmd_revise(root: Path, _lib: Library, args: argparse.Namespace) -> int:
+    d = root / "models" / args.slug
+    if not (d / "model.yaml").exists():
+        return _fail(f"{args.slug}: no such model")
+    meta = revise(yaml.safe_load((d / "model.yaml").read_text(encoding="utf-8")) or {}, args.message,
+                  datetime.date.today().isoformat())
+    _write_meta(d, meta)
+    print(f"{args.slug}: revision {meta['version']}")
+    return 0
+
+
+def cmd_list(root: Path, _lib: Library, args: argparse.Namespace) -> int:
+    rows = [("MODEL", "NAME", "STATUS", "REV", "UPDATED", "BASED ON")]
+    metas = _all_metas(root)
+    for slug in sorted(metas, key=lambda s: (str(metas[s].get("series", s)), int(metas[s].get("number", 0)))):
+        m = metas[slug]
+        if args.series and m.get("series") != args.series:
+            continue
+        if args.status and m.get("status") != args.status:
+            continue
+        rows.append((slug, str(m.get("name", "")), str(m.get("status", "")), str(m.get("version", "")), updated(m),
+                     str(m.get("based_on", "-"))))
+    widths = [max(len(r[i]) for r in rows) for i in range(len(rows[0]))]
+    for r in rows:
+        print("  ".join(c.ljust(w) for c, w in zip(r, widths)).rstrip())
     return 0
 
 
@@ -121,6 +182,9 @@ def cmd_validate(root: Path, lib: Library, args: argparse.Namespace) -> int:
     available = _load_kits(root, kits)
     unknown = set().union(*(load_unknown_parts(root / "inventory" / f"{k}.csv") for k in kits))
     issues = validate(doc, lib, available, load_id_map(root / "inventory" / "id-map.csv"), unknown)
+    issues += check_catalog(args.slug, _all_metas(root))
+    programs = {p.name: p.read_text(encoding="utf-8") for p in sorted((mpd.parent / "program").glob("*.py"))}
+    issues += check_programs(programs, {a.port for a in parse_ports(doc)[0]})
     for i in issues:
         print(f"{i.level:7} {i.code:20} {i.message}")
     errors = sum(i.level == "error" for i in issues)
@@ -226,14 +290,25 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--ldraw", type=Path, default=None, help="LDraw library dir (default: $LDRAWDIR or <root>/ldraw)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("new", help="scaffold models/<slug>")
-    s.add_argument("slug")
-    s.add_argument("--name")
+    s = sub.add_parser("new", help="scaffold the next model of a series: models/<series>-<n>")
+    s.add_argument("series", help="e.g. tank; the model becomes tank-1, tank-2, ...")
+    s.add_argument("--name", help="display name of the series; the number is appended (default: from --from, else the series)")
+    s.add_argument("--from", dest="base", metavar="SLUG", help="start from a copy of this model and record it as based_on")
     s.add_argument("--kit", action="append", help="kit set id, repeat for multiple copies (default: .local/owned.yaml, else 45678-1)")
     s.add_argument("--author", default="")
     s.set_defaults(func=cmd_new)
 
-    s = sub.add_parser("validate", help="check parts, kit inventory and ports")
+    s = sub.add_parser("revise", help="record a new revision of a model (version, date, note)")
+    s.add_argument("slug")
+    s.add_argument("-m", "--message", required=True, help="what changed, one line")
+    s.set_defaults(func=cmd_revise)
+
+    s = sub.add_parser("list", help="list models with status, revision, last change and base model")
+    s.add_argument("--series")
+    s.add_argument("--status")
+    s.set_defaults(func=cmd_list)
+
+    s = sub.add_parser("validate", help="check parts, kit inventory, ports, catalog fields and program ports")
     s.add_argument("slug")
     s.set_defaults(func=cmd_validate)
 

@@ -1,0 +1,17 @@
+name: 탱크 1호
+series: tank
+number: 1
+kits:
+  45678-1: 2
+  45681-1: 1
+  tank-tracks: 1
+status: draft
+version: 1
+created: '2026-11-22'
+revisions:
+- version: 1
+  date: '2026-11-22'
+  note: First draft
+story:
+  intro: 탱크 1호는 울퉁불퉁한 길도 잘 가요.
+  mission: 상자를 한 바퀴 돌아서 돌아와 보세요.
