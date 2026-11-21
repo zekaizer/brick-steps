@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="design/brand/brick-steps-lockup.svg" alt="Brick Steps" width="420">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="design/brand/brick-steps-lockup-dark.svg">
+    <img src="design/brand/brick-steps-lockup.svg" alt="Brick Steps" width="420">
+  </picture>
 </p>
 
 <p align="center"><b>Designed with AI. Built step by step.</b></p>
