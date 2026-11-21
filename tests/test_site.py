@@ -205,7 +205,10 @@ def test_site_css_stops_double_tap_zoom():
     from pathlib import Path
 
     css = (Path(__file__).resolve().parents[1] / "src" / "lego_creator" / "site_assets" / "components.css").read_text()
-    assert "touch-action: manipulation" in css
+    # WebKit does not pass touch-action down from <html>, so every element carries it.
+    assert "*, *::before, *::after { box-sizing: border-box; touch-action: manipulation; }" in css
+    assert "user-select: none" in css and "-webkit-touch-callout: none" in css
+    assert "overscroll-behavior: none" in css and "-webkit-tap-highlight-color: transparent" in css
 
 
 VIEW_CABLES = ManualView(

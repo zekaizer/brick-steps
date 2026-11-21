@@ -1,7 +1,16 @@
 /* Brick Steps components. Every value comes from a design token (see design/brick-steps.tokens.json). */
-*, *::before, *::after { box-sizing: border-box; }
-/* manipulation: no double-tap zoom on iPad (pinch zoom still works), so quick taps stay taps. */
-html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+/* Touch, for children on an iPad:
+   - manipulation on every element: no double-tap zoom anywhere (pinch zoom still works). WebKit does not pass
+     touch-action down from <html>, and the 3D canvas overrides it with none further down.
+   - no text selection, long-press menus or image dragging: a held finger should do nothing, not open a menu.
+   - no grey tap flash and no rubber-band scrolling; pressed things shrink a little instead (below). */
+*, *::before, *::after { box-sizing: border-box; touch-action: manipulation; }
+html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+img { -webkit-user-drag: none; }
+button, .chapter, .tile, .stop, .back, .sheet .go { transition: scale 80ms ease-out; }
+button:active, .chapter:active, .tile:active, .stop:active, .back:active, .sheet .go:active { scale: 0.96; }
+@media (prefers-reduced-motion: reduce) { button, .chapter, .tile, .stop, .back, .sheet .go { transition: none; } }
 /* keep-all: Korean lines break between words, not inside them. */
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); word-break: keep-all; overflow-wrap: break-word; }
 img { max-width: 100%; }

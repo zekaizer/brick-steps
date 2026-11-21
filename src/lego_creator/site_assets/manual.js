@@ -86,6 +86,11 @@
       });
     });
     sheet.querySelector(".x").addEventListener("click", close);
+    // A tap anywhere off the sheet closes it; a tap on another stop opens that one instead.
+    document.addEventListener("click", function (e) {
+      if (sheet.hidden || sheet.contains(e.target) || e.target.closest("a.stop")) return;
+      close();
+    });
     clear.addEventListener("click", function () {
       if (!armed) { armed = true; clear.textContent = "한 번 더 누르면 ‘다 만들었어요’ 표시만 지워요"; return; }
       var path = pathOf(openStop);
