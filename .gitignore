@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+/ldraw/
+/.cache/
+models/*/out/
+CLAUDE.local.md
+.local/
+/site/
+.env
+.env.*
+*.pem
+*.key
+.claude/settings.local.json
