@@ -25,8 +25,10 @@ HUB_PORT_POINTS: dict[str, Point] = {
     "E": (-70, -68, -40), "F": (70, -68, -40),
 }
 # Where the cable leaves a device, in the device's frame. The large motor's coiled cable starts at
-# (0, 14, 142) in 54675c01 and the housing ends at z 150. Devices not listed use their origin.
-CABLE_EXIT: dict[str, Point] = {"54675": (0, 14, 150), "54675c01": (0, 14, 150)}
+# (0, 14, 142) in 54675c01, the medium motor's at (0, 0, 142) in 54696p01c01, and both housings end at
+# z 150. Devices not listed use their origin.
+CABLE_EXIT: dict[str, Point] = {"54675": (0, 14, 150), "54675c01": (0, 14, 150),
+                                "54696p01": (0, 0, 150), "54696p01c01": (0, 0, 150)}
 LABELS = {"large_motor": "큰 모터", "medium_motor": "중간 모터", "color_sensor": "컬러 센서",
           "distance_sensor": "거리 센서", "force_sensor": "힘 센서", "lms_esp32": "보드"}
 
