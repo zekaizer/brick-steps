@@ -1,0 +1,18 @@
+name: 탱크 3호
+series: tank
+number: 3
+based_on: tank-2
+kits:
+  45678-1: 2
+  45681-1: 1
+  tank-tracks: 1
+  lms-esp32v2: 1
+status: draft
+version: 1
+created: '2026-11-22'
+revisions:
+- version: 1
+  date: '2026-11-22'
+  note: First draft
+story:
+  intro: 탱크 3호는 게임패드로 조종해요.

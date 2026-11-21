@@ -7,6 +7,7 @@ All notable changes to this project are recorded here. The format follows
 ## [Unreleased]
 
 ### Added
+- 탱크 3호 (draft, in the lab): tank 2 with an LMS-ESP32 board on port D for driving from a Bluetooth gamepad.
 - 탱크 2호 (draft, in the lab): tank 1 with a low, wide turret on the large turntable, turned a full circle by a medium motor, fenders over the tracks and turret missions.
 - The screen stays on while a manual is open (where the browser supports it), so the iPad does not lock between steps.
 - `lc validate` warns when a moving sub-assembly declared with `0 !LC TURN` runs into the rest of the model within its declared range, and when a part comes within a plate of the floor set by `0 !LC GROUND` (wheels, tracks). Both are box approximations.
