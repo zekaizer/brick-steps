@@ -42,7 +42,8 @@ class GalleryCard:
     step_count: int
 
 
-FONTS = "https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500&display=swap"
+FONTS = "https://fonts.googleapis.com/css2?family=Lexend:wght@600&family=Noto+Sans+KR:wght@400;500;700&display=swap"
+TAGLINE = "AI와 함께 만들고, 한 단계씩 따라 해요"
 
 
 def _e(text: object) -> str:
@@ -61,13 +62,15 @@ def _head(title: str, *, assets: str, manifest: str | None, print_mode: bool) ->
         f'<link rel="stylesheet" href="{_e(assets)}site.css">',
     ]
     if manifest and not print_mode:
-        icon = manifest.rsplit("/", 1)[0] + "/" if "/" in manifest else ""
+        root = manifest.rsplit("/", 1)[0] + "/" if "/" in manifest else ""
         parts += [
             f'<link rel="manifest" href="{_e(manifest)}">',
+            f'<link rel="icon" type="image/svg+xml" href="{_e(root)}favicon.svg">',
+            f'<link rel="icon" type="image/png" sizes="32x32" href="{_e(root)}favicon-32.png">',
+            f'<link rel="apple-touch-icon" href="{_e(root)}apple-touch-icon.png">',
             '<meta name="apple-mobile-web-app-capable" content="yes">',
             '<meta name="mobile-web-app-capable" content="yes">',
             '<meta name="apple-mobile-web-app-title" content="Brick Steps">',
-            f'<link rel="apple-touch-icon" href="{_e(icon)}icon-180.png">',
         ]
     parts.append("</head>")
     return "\n".join(parts)
@@ -163,7 +166,12 @@ def gallery_html(cards: list[GalleryCard]) -> str:
     return "\n".join([
         _head("Brick Steps", assets="assets/", manifest="manifest.webmanifest", print_mode=False),
         '<body class="gallery" data-sw="sw.js">',
-        f'<main class="wrap"><h1 class="t-title">무엇을 만들까요?</h1>{body}</main>',
+        (
+            '<main class="wrap"><header class="site-head">'
+            '<img class="brand" src="brand/brick-steps-lockup.svg" alt="Brick Steps" width="488" height="113">'
+            f'<p class="tagline t-caption">{TAGLINE}</p></header>'
+            f'<h1 class="t-title">무엇을 만들까요?</h1>{body}</main>'
+        ),
         '<script src="assets/manual.js" defer></script>',
         "</body>\n</html>\n",
     ])
@@ -183,6 +191,7 @@ def web_manifest(paper: str) -> str:
         "icons": [
             {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
             {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+            {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
         ],
     }, ensure_ascii=False, indent=2)
 

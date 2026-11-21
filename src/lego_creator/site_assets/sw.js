@@ -1,7 +1,7 @@
 // Brick Steps service worker: cache-first with background refresh for same-origin GETs and Google Fonts.
 // One cache name for the life of the site, so manuals opened before stay readable offline after an update.
 const CACHE = "brick-steps";
-const SHELL = ["./", "./assets/site.css", "./assets/manual.js", "./manifest.webmanifest"];
+const SHELL = ["./", "./assets/site.css", "./assets/manual.js", "./manifest.webmanifest", "./brand/brick-steps-lockup.svg", "./favicon.svg"];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
