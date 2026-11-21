@@ -9,6 +9,7 @@ import io
 import json
 import os
 import re
+import shutil
 import sys
 import urllib.request
 import zipfile
@@ -28,6 +29,8 @@ DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 LDRAW_URL = "https://library.ldraw.org/library/updates/complete.zip"
 REBRICKABLE_URL = "https://cdn.rebrickable.com/media/downloads/{}.csv.gz"
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+# library.ldraw.org rejects urllib's default agent with 403; identify the tool instead (no personal data).
+USER_AGENT = "lego-creator/0 (+https://github.com/zekaizer/lego-creator)"
 
 MPD_TEMPLATE = """\
 0 FILE main.ldr
@@ -137,7 +140,9 @@ def _download(url: str, dest: Path) -> Path:
         dest.parent.mkdir(parents=True, exist_ok=True)
         print(f"downloading {url}")
         tmp = dest.with_suffix(dest.suffix + ".part")
-        urllib.request.urlretrieve(url, tmp)
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        with urllib.request.urlopen(req) as resp, tmp.open("wb") as f:
+            shutil.copyfileobj(resp, f)
         tmp.rename(dest)
     return dest
 

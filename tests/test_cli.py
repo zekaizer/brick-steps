@@ -95,3 +95,22 @@ def test_validate_treats_blank_kit_quantity_as_unknown(tmp_path, capsys):
     mpd.write_text(mpd.read_text() + "1 0 0 0 0 1 0 0 0 1 0 0 0 1 3020.dat\n")
     assert run(root, "validate", "x") == 0
     assert "quantity-unknown" in capsys.readouterr().out
+
+
+def test_download_sends_a_tool_user_agent(tmp_path, monkeypatch):
+    # library.ldraw.org answers 403 to urllib's default "Python-urllib/x.y" agent.
+    import io
+    import urllib.request
+
+    from lego_creator import cli
+
+    seen = {}
+
+    def fake_urlopen(req, *a, **k):
+        seen["ua"] = req.get_header("User-agent")
+        return io.BytesIO(b"payload")
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    out = cli._download("https://example.invalid/x.zip", tmp_path / "x.zip")
+    assert out.read_bytes() == b"payload"
+    assert seen["ua"] and seen["ua"].startswith("lego-creator/") and "Python-urllib" not in seen["ua"]
