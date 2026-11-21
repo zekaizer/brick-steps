@@ -9,7 +9,7 @@ Work in this order. Each step has a tool; do not replace a tool with reasoning a
 
 Before starting, read `docs/design-lessons.md`. It holds what earlier models taught us.
 
-1. **Scaffold.** `uv run lc new <slug> --name "<Korean name>"`, then trim `kits` in `model.yaml` to the kits the build needs.
+1. **Scaffold.** A new idea starts a series: `uv run lc new <series> --name "<Korean series name>"` makes `<series>-1`. The next model of a series starts from an existing one: `uv run lc new <series> --from <slug>`. Trim `kits` in `model.yaml` to the kits the build needs, and write `story.intro` and `story.mission` (one short Korean sentence each, 해요체).
 2. **Measure.** Load the `ldraw-spike` skill. For every part that is not in its tables, run `scripts/ldraw_measure.py bbox` and `holes` and work from those numbers. When a measurement would be needed again, add it to the skill's tables in the same change.
 3. **Fix the frame of reference first.** Write the axes and the two or three key positions (axle heights, wheelbase) as a comment at the top of the main model. Put every other part on that grid.
 4. **Write the `.mpd`.** Place parts so that each pin, axle or bush has a named hole at both ends. Generate repetitive geometry (tread loops, rows of links) with a script in `scripts/gen_<model>_<thing>.py` and paste its output as a `0 FILE` block; record the script in the block's Author line.
@@ -29,6 +29,7 @@ Finish every design session by updating the repository, in the same branch as th
 - A rule about designing goes into `docs/design-lessons.md`, in the form that file describes.
 - An unknown about this model goes into its `spec.md`.
 - A check that was done by hand twice becomes a command in `scripts/ldraw_measure.py`.
+- A change to a model that already had a revision recorded gets `uv run lc revise <slug> -m "..."`. Changes made before the first draft is shown to the maintainer do not.
 
 When the maintainer reports how a real build went, update the lessons first: mark confirmed ones `built`, and rewrite the ones the build contradicted.
 
