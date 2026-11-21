@@ -342,7 +342,7 @@ def test_cover_shows_the_model_version_and_done_names_the_maker():
 def test_gallery_and_lab_footer_show_site_version_and_maker():
     for html in (gallery_html([], version="0.0.1"), gallery_html([], lab=True, version="0.0.1")):
         foot = html[html.index("<footer"):html.index("</footer>")]
-        assert "Brick Steps 0.0.1" in foot and "만든 사람 Luke Lee" in foot
+        assert "Brick Steps v0.0.1" in foot and "만든 사람 Luke Lee" in foot
 
 
 MAP = [

@@ -384,7 +384,7 @@ def gallery_html(cards: list[GalleryCard], *, lab: bool = False, version: str | 
             f'<div class="brand-box"><img class="brand" src="{up}brand/brick-steps-lockup.svg" alt="Brick Steps" width="488" height="113">'
             f'<p class="tagline t-caption">{TAGLINE}</p></div>'
             f'{heading}</header>{body}'
-            f'<footer class="site-foot t-caption">Brick Steps{" " + _e(version) if version else ""} · {MAKER}</footer></main>'
+            f'<footer class="site-foot t-caption">Brick Steps{" v" + _e(version) if version else ""} · {MAKER}</footer></main>'
         ),
         f'<script src="{up}assets/manual.js" defer></script>',
         "</body>\n</html>\n",
