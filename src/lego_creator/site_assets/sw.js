@@ -1,7 +1,18 @@
 // Brick Steps service worker: cache-first with background refresh for same-origin GETs and Google Fonts.
 // One cache name for the life of the site, so manuals opened before stay readable offline after an update.
 const CACHE = "brick-steps";
-const SHELL = ["./", "./assets/site.css", "./assets/manual.js", "./manifest.webmanifest", "./brand/brick-steps-lockup.svg", "./favicon.svg"];
+const SHELL = [
+  "./", "./assets/site.css", "./assets/manual.js", "./manifest.webmanifest", "./brand/brick-steps-lockup.svg", "./favicon.svg",
+  // 3D step view (ADR 0002)
+  "./assets/viewer3d.js",
+  "./assets/vendor/three/three.module.min.js",
+  "./assets/vendor/three/addons/controls/OrbitControls.js",
+  "./assets/vendor/three/addons/loaders/LDrawLoader.js",
+  "./assets/vendor/three/addons/materials/LDrawConditionalLineMaterial.js",
+  "./assets/vendor/three/addons/lines/LineSegments2.js",
+  "./assets/vendor/three/addons/lines/LineSegmentsGeometry.js",
+  "./assets/vendor/three/addons/lines/LineMaterial.js",
+];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

@@ -44,6 +44,7 @@
     if (history.replaceState) history.replaceState(null, "", "#" + card.id);
     window.scrollTo(0, 0);
     try { localStorage.setItem(key, card.id); } catch (e) {}
+    document.dispatchEvent(new CustomEvent("brick-steps:show", { detail: { card: card, dir: dir || 0 } }));
   }
 
   function forward() { show(current === cards.length - 1 ? 0 : current + 1, 1); }
@@ -59,7 +60,10 @@
   });
 
   var startX = null;
-  deck.addEventListener("touchstart", function (e) { startX = e.touches[0].clientX; }, { passive: true });
+  deck.addEventListener("touchstart", function (e) {
+    // A drag on the 3D view turns the model; it must not also turn the page.
+    startX = e.target.closest(".stage3d") ? null : e.touches[0].clientX;
+  }, { passive: true });
   deck.addEventListener("touchend", function (e) {
     if (startX === null) return;
     var dx = e.changedTouches[0].clientX - startX;
@@ -75,5 +79,7 @@
   show(start < 0 ? 0 : start, 0);
 
   var images = Array.prototype.map.call(deck.querySelectorAll("img"), function (img) { return img.src; });
+  var model3d = document.body.getAttribute("data-model3d");
+  if (model3d) images.push(new URL(model3d, location.href).href);
   registerServiceWorker(images);
 })();
