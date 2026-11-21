@@ -20,9 +20,10 @@ SKIP = {"uv.lock"}  # third-party package metadata
 
 
 def _committable_files() -> list[Path]:
-    out = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
-                         cwd=ROOT, capture_output=True, check=True).stdout
-    return [ROOT / p for p in out.decode().split("\0") if p and p not in SKIP]
+    proc = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+                          cwd=ROOT, capture_output=True, check=False)
+    assert proc.returncode == 0, f"git ls-files failed: {proc.stderr.decode(errors='replace').strip()}"
+    return [ROOT / p for p in proc.stdout.decode().split("\0") if p and p not in SKIP]
 
 
 @pytest.mark.skipif(shutil.which("git") is None or not (ROOT / ".git").exists(), reason="needs a git checkout")
