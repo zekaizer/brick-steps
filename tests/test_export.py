@@ -50,7 +50,9 @@ def test_build_site_end_to_end(tmp_path):
     assert cards[0].step_count == 4 and cards[0].part_count == 4
     for rel in ("index.html", "sw.js", "manifest.webmanifest", "assets/site.css", "assets/manual.js",
                 "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "favicon.svg",
-                "favicon-32.png", "brand/brick-steps-lockup.svg", "bot/index.html", "bot/manual.pdf", "bot/img/hero.png"):
+                "favicon-32.png", "brand/brick-steps-lockup.svg", "bot/index.html", "bot/manual.pdf", "bot/img/hero.png",
+                "bot/model3d.txt", "assets/viewer3d.js", "assets/vendor/three/three.module.min.js",
+                "assets/vendor/three/addons/loaders/LDrawLoader.js"):
         assert (out / rel).is_file(), rel
     assert not (out / "wip").exists()
     page = (out / "bot" / "index.html").read_text(encoding="utf-8")
@@ -58,3 +60,7 @@ def test_build_site_end_to_end(tmp_path):
     for src in __import__("re").findall(r'src="([^"]+\.png)"', page):
         assert (out / "bot" / src).resolve().is_file(), src
     assert (out / "bot" / "manual.pdf").read_bytes()[:4] == b"%PDF"
+    assert 'data-sub="board.ldr" data-shown="3" data-fresh="2"' in page
+    packed = (out / "bot" / "model3d.txt").read_text(encoding="utf-8")
+    for name in ("main.ldr", "board.ldr", "64179.dat", "lms-esp32v2.dat"):
+        assert f"0 FILE {name}\n" in packed, name

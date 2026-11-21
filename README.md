@@ -15,7 +15,7 @@ Brick Steps is a set of original robots for LEGO® SPIKE™ Prime, designed toge
 
 - `models/`: one folder per robot. It holds the LDraw model (`model.mpd`), design notes and the Pybricks program.
 - `lc validate <model>`: checks a model against the LDraw library and the kits it may use, including parts, colors, rotations and hub ports.
-- `lc site`: renders every step with LeoCAD and builds the manual site and PDFs that GitHub Pages serves.
+- `lc site`: renders every step with LeoCAD and builds the manual site and PDFs that GitHub Pages serves. On the site, each step is also a 3D model that can be turned with a finger.
 - `design/`: the Brick Steps design tokens and logo, synced from the design system.
 
 ## Quick start
@@ -33,7 +33,7 @@ uv run lc site --include-drafts   # needs LeoCAD 25.09 and Xvfb
 
 - Code is under the MIT license (`LICENSE`). Building designs, manuals and the Brick Steps logo are under CC BY-SA 4.0 (`LICENSE-CONTENT.md`).
 - Kit inventories are derived from [Rebrickable](https://rebrickable.com) catalog data.
-- Part geometry comes from the [LDraw.org Parts Library](https://library.ldraw.org) (CC BY 4.0). The library is not redistributed here.
-- Step images are rendered with [LeoCAD](https://www.leocad.org). The wordmark is set in [Lexend](https://www.lexend.com) (SIL OFL 1.1).
+- Part geometry comes from the [LDraw.org Parts Library](https://library.ldraw.org) (CC BY 4.0). The library is not kept in this repository; the published site includes the parts its models use.
+- Step images are rendered with [LeoCAD](https://www.leocad.org). The 3D step view uses [three.js](https://threejs.org) (MIT). The wordmark is set in [Lexend](https://www.lexend.com) (SIL OFL 1.1).
 
 LEGO® and SPIKE™ are trademarks of the LEGO Group, which does not sponsor, authorize or endorse this project.

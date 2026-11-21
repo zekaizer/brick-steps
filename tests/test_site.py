@@ -91,3 +91,42 @@ def test_gallery_header_shows_logo_and_tagline():
 def test_web_manifest_has_maskable_icon():
     icons = json.loads(web_manifest("#f2f7f8"))["icons"]
     assert {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"} in icons
+
+
+VIEW_3D = ManualView(
+    slug="tank",
+    name="탱크 로봇",
+    part_count=42,
+    hero="img/hero.png",
+    model3d="model3d.txt",
+    main_sub="main.ldr",
+    steps=[
+        StepView(1, "img/s0-01.png", sub="wheels.ldr", shown=2, fresh=2),
+        StepView(2, "img/s1-01.png", sub="main.ldr", shown=3, fresh=1),
+    ],
+    done_shown=3,
+)
+
+
+def test_manual_html_tells_the_3d_view_what_each_step_shows():
+    html = manual_html(VIEW_3D, assets="../assets/")
+    assert 'data-model3d="model3d.txt"' in html
+    assert 'data-sub="wheels.ldr" data-shown="2" data-fresh="2"' in html
+    assert 'data-sub="main.ldr" data-shown="3" data-fresh="1"' in html
+    assert 'data-sub="main.ldr" data-shown="3" data-fresh="0"' in html  # finished model on the done card
+    assert '"three": "../assets/vendor/three/three.module.min.js"' in html
+    assert '"three/addons/": "../assets/vendor/three/addons/"' in html
+    assert '<script type="module" src="../assets/viewer3d.js"></script>' in html
+    assert html.index('type="importmap"') < html.index("viewer3d.js")
+    assert "LDraw.org Parts Library" in html
+
+
+def test_manual_html_keeps_step_images_as_the_fallback_under_3d():
+    html = manual_html(VIEW_3D, assets="../assets/")
+    assert 'src="img/s0-01.png"' in html and 'src="img/s1-01.png"' in html
+
+
+def test_manual_html_without_3d_or_in_print_has_no_3d_hooks():
+    for html in (manual_html(VIEW, assets="./"), manual_html(VIEW_3D, assets="./", print_mode=True)):
+        assert "data-model3d" not in html and "viewer3d.js" not in html and "importmap" not in html
+        assert "data-sub" not in html

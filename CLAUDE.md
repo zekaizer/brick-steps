@@ -12,7 +12,7 @@ Original LEGO SPIKE Prime builds: LDraw models, kit-constrained BOM checks, buil
 - `.local/owned.yaml` — personal collection (not committed). `kits: {set: qty}` is the default for `lc new`; `model.yaml` `kits` uses the same `{set: qty}` form.
 - `design/` — synced copy of the Brick Steps design system tokens (`source.json` records the artifact version). Never hand-edit; change the artifact, then re-sync.
 - `docs/adr/` — architecture decisions. `.github/workflows/pages.yml` builds and deploys the site.
-- `src/lego_creator/` — `lc` CLI; `site_assets/` holds the site's component CSS, manual.js and service worker. `tests/` — pytest; `test_real_data.py` is skipped until `ldraw/` exists.
+- `src/lego_creator/` — `lc` CLI; `site_assets/` holds the site's component CSS, manual.js, the 3D step view (`viewer3d.js`), the service worker and `vendor/three/` (unmodified three.js, never hand-edit). `tests/` — pytest; `test_real_data.py` is skipped until `ldraw/` exists.
 
 ## Commands
 
@@ -32,5 +32,6 @@ Original LEGO SPIKE Prime builds: LDraw models, kit-constrained BOM checks, buil
 - Hub ports are declared only in the `.mpd` (`0 !LC PORT`); do not duplicate them in `model.yaml`.
 - `lc validate` checks line syntax, rotation matrices (proper rotation, det +1), color codes against LDConfig, part resolution, aliases, kit inventory and ports. It does not check physical connectivity, collisions, grid alignment or mechanism behaviour; those need human review in a viewer (LeoCAD/LDCad) or on the real build.
 - Instruction export needs LeoCAD 25.09, Xvfb and Pango (ADR 0001). The site is kid-facing Korean; only `status: ready` models are published.
+- The 3D step view (ADR 0002) is an enhancement over the rendered pictures and has no automated test. After changing `viewer3d.js`, `manual.js` or `pack3d.py`, build a site and check a manual in a browser.
 - Site look follows the Brick Steps design system, a private claude.ai artifact (link in `CLAUDE.local.md`). Read its README before changing `site_assets/components.css`; every value there must come from a token.
 - Add a line under `## [Unreleased]` in `CHANGELOG.md` in the same commit as any user-visible change. Releases follow `docs/releasing.md`: 0.0.z is the beta series and only PATCH is bumped until the maintainer says otherwise.

@@ -21,6 +21,9 @@ class StepView:
     image: str
     tray: list[TrayItem] = field(default_factory=list)
     section_title: str | None = None
+    sub: str | None = None  # 3D view: submodel this step builds
+    shown: int = 0  # 3D view: placed references visible at this step
+    fresh: int = 0  # 3D view: how many of those are new in this step
 
 
 @dataclass(frozen=True)
@@ -31,6 +34,9 @@ class ManualView:
     hero: str
     steps: list[StepView]
     pdf: str | None = None
+    model3d: str | None = None
+    main_sub: str | None = None
+    done_shown: int = 0
 
 
 @dataclass(frozen=True)
@@ -99,6 +105,13 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
     Without JS (and in print_mode, used for the PDF) all cards are stacked.
     """
     total = len(view.steps)
+    with_3d = bool(view.model3d) and not print_mode
+
+    def hooks(sub: str | None, shown: int, fresh: int) -> str:
+        if not with_3d or not sub:
+            return ""
+        return f' data-sub="{_e(sub)}" data-shown="{shown}" data-fresh="{fresh}"'
+
     cards = [
         '<section class="card cover" id="cover">'
         f'<h1 class="t-title">{_e(view.name)}</h1>'
@@ -118,22 +131,26 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
             "</div>"
             f'<div class="progress" aria-hidden="true"><i style="width:{pct}%"></i></div>'
             f"{label}{_tray(step.tray)}"
-            f'<figure class="step-img"><img src="{_e(step.image)}" alt="{step.number}단계 조립 모습" loading="lazy"></figure>'
+            f'<figure class="step-img"{hooks(step.sub, step.shown, step.fresh)}><img src="{_e(step.image)}" alt="{step.number}단계 조립 모습" loading="lazy"></figure>'
             "</section>"
         )
     cards.append(
         '<section class="card done" id="done">'
         '<p class="badge t-heading">완성!</p>'
         f'<h1 class="t-title">{_e(view.name)}</h1>'
-        f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}">'
-        "</section>"
+        f'<figure class="step-img"{hooks(view.main_sub, view.done_shown, 0)}>'
+        f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}"></figure>'
+        + ('<p class="t-caption credit">부품 모양은 LDraw.org Parts Library(CC BY 4.0)에서 왔어요.</p>' if with_3d else "")
+        + "</section>"
     )
     if print_mode:
         body_attrs = ' class="manual print"'
-    elif sw:
-        body_attrs = f' class="manual" data-sw="{_e(sw)}"'
     else:
         body_attrs = ' class="manual"'
+        if sw:
+            body_attrs += f' data-sw="{_e(sw)}"'
+        if with_3d:
+            body_attrs += f' data-model3d="{_e(view.model3d)}"'
     out = [_head(f"{view.name} 만들기", assets=assets, manifest=manifest, print_mode=print_mode), f"<body{body_attrs}>",
            f'<main class="wrap deck" id="deck">{"".join(cards)}</main>']
     if not print_mode:
@@ -145,6 +162,13 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
                 "</div></nav>"
             ),
             f'<script src="{_e(assets)}manual.js" defer></script>',
+        ]
+    if with_3d:
+        three = f"{assets}vendor/three/"
+        imports = {"three": f"{three}three.module.min.js", "three/addons/": f"{three}addons/"}
+        out += [
+            f'<script type="importmap">{json.dumps({"imports": imports})}</script>',
+            f'<script type="module" src="{_e(assets)}viewer3d.js"></script>',
         ]
     out.append("</body>\n</html>\n")
     return "\n".join(out)
