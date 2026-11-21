@@ -19,6 +19,7 @@ All notable changes to this project are recorded here. The format follows
 - The repository is now github.com/zekaizer/brick-steps, and the manuals are served at https://zekaizer.github.io/brick-steps/. The old lego-creator Pages address no longer works.
 
 ### Fixed
+- Tapping twice quickly on an iPad no longer zooms the page.
 - `lc new --name` with a Korean name now writes the name as readable text in `model.yaml`.
 - The GitHub Pages build no longer fails in its container: git now trusts the checkout, so the site deploys.
 

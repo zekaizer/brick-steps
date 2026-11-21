@@ -1,6 +1,7 @@
 /* Brick Steps components. Every value comes from a design token (see design/brick-steps.tokens.json). */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+/* manipulation: no double-tap zoom on iPad (pinch zoom still works), so quick taps stay taps. */
+html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); }
 img { max-width: 100%; }
 a { color: var(--azure-deep); }

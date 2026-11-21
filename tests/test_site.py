@@ -167,3 +167,10 @@ def test_manual_html_adds_a_card_per_mission_after_the_finished_model():
 def test_manual_html_keeps_missions_in_print():
     html = manual_html(VIEW_STORY, assets="./", print_mode=True)
     assert 'id="mission-1"' in html and 'id="mission-2"' in html
+
+
+def test_site_css_stops_double_tap_zoom():
+    from pathlib import Path
+
+    css = (Path(__file__).resolve().parents[1] / "src" / "lego_creator" / "site_assets" / "components.css").read_text()
+    assert "touch-action: manipulation" in css
