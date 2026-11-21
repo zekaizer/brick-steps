@@ -89,3 +89,28 @@ def test_malformed_line_is_error_with_location():
     issues = validate(parse("0 FILE a.ldr\n1 4 0 0\n"), LIB, None, {})
     assert codes(issues) == ["malformed-line"]
     assert "a.ldr line 2" in issues[0].message
+
+
+def test_turn_and_ground_checks_are_included(tmp_path):
+    (tmp_path / "parts").mkdir()
+    cube = "\n".join([
+        "4 16 -10 -10 -10 10 -10 -10 10 -10 10 -10 -10 10",
+        "4 16 -10 10 -10 10 10 -10 10 10 10 -10 10 10",
+    ])
+    (tmp_path / "parts" / "cube.dat").write_text(cube + "\n")
+    lib = Library(tmp_path)
+    doc = parse(
+        "0 FILE main.ldr\n"
+        "1 16 0 0 0 1 0 0 0 1 0 0 0 1 arm.ldr\n"
+        "1 16 0 0 0 1 0 0 0 1 0 0 0 1 wheel.ldr\n"
+        "1 4 0 0 -40 1 0 0 0 1 0 0 0 1 cube.dat\n"
+        "0 FILE arm.ldr\n0 !LC TURN 0 -1 0 0 0 0 0 360 arm\n"
+        "1 1 40 -2 0 1 0 0 0 1 0 0 0 1 cube.dat\n"
+        "0 FILE wheel.ldr\n0 !LC GROUND\n"
+        "1 0 0 0 40 1 0 0 0 1 0 0 0 1 cube.dat\n"
+    )
+    issues = validate(doc, lib, None, {})
+    assert codes(issues) == []
+    assert codes(issues, "warning") == ["ground-clearance", "ground-clearance", "turn-interference", "turn-interference"]
+    bad = parse("0 !LC TURN 0 -1 0 arm\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 cube.dat\n")
+    assert codes(validate(bad, lib, None, {})) == ["turn-malformed"]

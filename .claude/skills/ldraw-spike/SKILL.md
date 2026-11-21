@@ -97,6 +97,20 @@ The n-th `PORT` line naming a part belongs to the n-th placement of that part in
 
 Rules: ports go from A to F, each port is used once, the part must be a hub device, and the model must contain at least as many of that device as it has assignments. A device without a port is reported as a warning. The `role` (snake_case) documents what the device does; missions use the port letter in their blocks, and `lc validate` checks that every port a mission uses is declared here.
 
+## Moving parts and the floor
+
+A part group that turns (a turret, an arm, a gate) is its own submodel, and that submodel declares how it turns:
+
+```
+0 !LC TURN 0 -1 0 0 -70 20 0 360 turret
+```
+
+Axis (x y z), pivot (x y z) in the submodel's own coordinates, the range in degrees (from to), then a snake_case role. Declare only the range it should really turn: `-30 90` for an arm that stops against a beam. `lc validate` turns the submodel through the range in 15° steps and warns `turn-interference` for each part it newly runs into, with the first angle. Parts already touching at 0° (an axle in its hole) are joints and are skipped. Tracks and chains moving with a wheel are not modelled, so do not declare drive wheels.
+
+Submodels whose parts touch the floor (tracks, wheels) declare `0 !LC GROUND`. Every other part must stay a plate (8 LDU) above the lowest of them, or `lc validate` warns `ground-clearance`.
+
+Both checks compare oriented bounding boxes, so they over-report around round parts. Treat a warning as a place to look in a viewer, not as proof.
+
 ## Instruction structure
 
 - The first `0 FILE` is the main model. Make each subassembly (drivebase, arm, sensor mount) its own `0 FILE` so that it becomes an instruction callout.

@@ -14,7 +14,7 @@ Before starting, read `docs/design-lessons.md`. It holds what earlier models tau
 3. **Fix the frame of reference first.** Write the axes and the two or three key positions (axle heights, wheelbase) as a comment at the top of the main model. Put every other part on that grid.
 4. **Write the `.mpd`.** Place parts so that each pin, axle or bush has a named hole at both ends. Generate repetitive geometry (tread loops, rows of links) with a script in `scripts/gen_<model>_<thing>.py` and paste its output as a `0 FILE` block; record the script in the block's Author line.
 5. **Check, in this order.**
-   - `uv run lc validate <slug>`: must report 0 errors.
+   - `uv run lc validate <slug>`: must report 0 errors. Declare each turning sub-assembly with `0 !LC TURN` and the floor contact with `0 !LC GROUND` (ldraw-spike skill) first, and explain every `turn-interference` and `ground-clearance` warning or fix it.
    - `uv run python scripts/ldraw_measure.py overlap <slug>`: explain every line it prints, or move the part. A box overlap with a motor or hub is real unless `slice` shows the body does not reach that far.
    - `uv run lc instructions <slug> --no-pdf`: look at the step pictures in `models/<slug>/out/manual/img/`. A part that floats, pokes through another or faces the wrong way is visible here.
 6. **Missions.** Write `missions.yaml` with one to three missions, easiest first: a goal sentence, the blocks, and a `try` question that changes one number. Use only blocks from `src/lego_creator/missions.py`; add a block there (with its wording from the app) before using it. Prefer rotations or seconds over centimetres, since centimetres depend on the app's wheel setting. A mission that needs a value only a real build can tell (how far one rotation turns the robot) asks the child to find it.
@@ -36,4 +36,4 @@ When the maintainer reports how a real build went, update the lessons first: mar
 
 ## What the tools cannot tell
 
-`lc validate` and the overlap check know nothing about friction, gravity or flex. Say so when presenting a draft: it is a picture of the intent until someone builds it.
+`lc validate` and the overlap check know nothing about friction, gravity or flex, and the turn and floor checks only compare boxes. Say so when presenting a draft: it is a picture of the intent until someone builds it.
