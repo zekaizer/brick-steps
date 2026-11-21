@@ -17,6 +17,7 @@ DEVICES: dict[str, str] = {
     **dict.fromkeys(("37308", "37308c01"), "color_sensor"),
     **dict.fromkeys(("37316", "37316c01"), "distance_sensor"),
     **dict.fromkeys(("37312", "37312c01"), "force_sensor"),
+    "lms-esp32v2": "lms_esp32",  # custom part, custom/parts/
 }
 
 

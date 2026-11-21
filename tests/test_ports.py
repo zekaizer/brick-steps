@@ -52,3 +52,8 @@ def test_check_ports_warns_on_unassigned_device():
     bom = Counter({("54696p01c01", 16): 2})
     issues = check_ports([PortAssignment("A", "54696p01c01", "x")], bom)
     assert [(i.level, i.code) for i in issues] == [("warning", "port-unassigned")]
+
+
+def test_lms_esp32v2_is_a_port_device():
+    bom = Counter({("lms-esp32v2", 16): 1})
+    assert check_ports([PortAssignment("E", "lms-esp32v2", "esp")], bom) == []
