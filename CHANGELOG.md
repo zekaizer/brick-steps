@@ -15,6 +15,7 @@ All notable changes to this project are recorded here. The format follows
 - Mission blocks look like the SPIKE App's: as wide as their words, joined by notches, a hat on event blocks, C-shaped repeat blocks, white number inputs and darker dropdowns.
 - A "케이블을 꽂아요" card right after the hub and its motors are placed. It lists each port letter with the device to plug in, and in 3D draws each cable as a flat ribbon in its port's color, from the device around the hub into a real-size plug, with the port letter beside it. The cables slide into their ports when the card opens, and other parts fade so the cables stay in sight.
 - A section bar at the top of every manual screen jumps straight to 조립, 케이블, 완성 or 움직여 보기, and its 목차 button opens a sheet with a tile for every screen, ticking the steps already seen. The bar starts with the Brick Steps mark, which leads back to the gallery. It replaces the step progress line.
+- The gallery and lab end with the site version and "만든 사람 Luke Lee". Manual covers show the model's version, and the finished screen names the maker.
 - A hidden lab at `/lab/` shows models that are still drafts, marked as untested. Tap the gallery logo five times to open it.
 
 ### Changed

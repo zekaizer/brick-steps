@@ -67,6 +67,7 @@ class ManualView:
     cables: CableView | None = None
     intro: str | None = None
     missions: list[MissionView] = field(default_factory=list)
+    version: int | None = None
 
 
 @dataclass(frozen=True)
@@ -80,6 +81,7 @@ class GalleryCard:
 
 FONTS = "https://fonts.googleapis.com/css2?family=Lexend:wght@600&family=Noto+Sans+KR:wght@400;500;700&display=swap"
 TAGLINE = "AI와 함께 만들고, 한 단계씩 따라 해요"
+MAKER = "만든 사람 Luke Lee"
 
 
 def _e(text: object) -> str:
@@ -211,6 +213,7 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
         + f'<h1 class="t-title">{_e(view.name)}</h1>'
         + (f'<p class="t-body intro">{_e(view.intro)}</p>' if view.intro else "")
         + f'<p class="t-body">부품 {view.part_count}개 · {total}단계</p>'
+        + (f'<p class="t-caption version">버전 {view.version}</p>' if view.version else "")
         + (f'<p class="t-caption"><a href="{_e(view.pdf)}">PDF로 보기</a></p>' if view.pdf and not print_mode else "")
     )
     hero = f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}">'
@@ -233,6 +236,7 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
         '<p class="badge t-heading">완성!</p>'
         f'<h1 class="t-title">{_e(view.name)}</h1>'
         + ('<p class="t-caption credit">부품 모양은 LDraw.org Parts Library(CC BY 4.0)에서 왔어요.</p>' if with_3d else "")
+        + f'<p class="t-caption credit">{MAKER}</p>'
     )
     figure = (f'<figure class="step-img"{hooks(view.main_sub, view.done_shown, 0)}>'
               f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}"></figure>')
@@ -279,7 +283,7 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
     return "\n".join(out)
 
 
-def gallery_html(cards: list[GalleryCard], *, lab: bool = False) -> str:
+def gallery_html(cards: list[GalleryCard], *, lab: bool = False, version: str | None = None) -> str:
     """The gallery of ready models, or with lab=True the hidden lab of drafts under lab/.
 
     The gallery logo opens the lab after five taps (manual.js); nothing links to it.
@@ -311,7 +315,8 @@ def gallery_html(cards: list[GalleryCard], *, lab: bool = False) -> str:
             '<main class="wrap"><header class="site-head">'
             f'<img class="brand" src="{up}brand/brick-steps-lockup.svg" alt="Brick Steps" width="488" height="113">'
             f'<p class="tagline t-caption">{TAGLINE}</p></header>'
-            f'{heading}{body}</main>'
+            f'{heading}{body}'
+            f'<footer class="site-foot t-caption">Brick Steps{" " + _e(version) if version else ""} · {MAKER}</footer></main>'
         ),
         f'<script src="{up}assets/manual.js" defer></script>',
         "</body>\n</html>\n",

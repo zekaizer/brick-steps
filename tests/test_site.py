@@ -317,3 +317,16 @@ def test_section_bar_shows_the_brand_mark_linking_home():
 def test_print_has_no_section_bar_or_contents():
     html = manual_html(VIEW_ALL, assets="./", brand="../brand/", print_mode=True)
     assert 'class="chapters"' not in html and "<dialog" not in html
+
+
+def test_cover_shows_the_model_version_and_done_names_the_maker():
+    view = ManualView("t", "탱크 1호", 1, "h.png", [StepView(1, "a.png")], version=3)
+    html = manual_html(view, assets="./")
+    assert "버전 3" in _card(html, "cover") and "만든 사람 Luke Lee" in _card(html, "done")
+    assert "버전" not in _card(manual_html(ManualView("t", "t", 1, "h.png", [StepView(1, "a.png")]), assets="./"), "cover")
+
+
+def test_gallery_and_lab_footer_show_site_version_and_maker():
+    for html in (gallery_html([], version="0.0.1"), gallery_html([], lab=True, version="0.0.1")):
+        foot = html[html.index("<footer"):html.index("</footer>")]
+        assert "Brick Steps 0.0.1" in foot and "만든 사람 Luke Lee" in foot

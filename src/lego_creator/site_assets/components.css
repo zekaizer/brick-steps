@@ -182,7 +182,8 @@ h1, p, figure { margin: 0; }
 @media (max-width: 479px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 .model-card { display: grid; gap: var(--space-2); min-height: var(--tap-min); background: var(--surface); border-radius: var(--radius-md); padding: var(--space-4); color: var(--ink); text-decoration: none; }
 .model-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: var(--radius-sm); background: var(--paper); }
-.model-card .t-caption, .empty { color: var(--ink-muted); }
+.model-card .t-caption, .empty, .site-foot, .version { color: var(--ink-muted); }
+.site-foot { padding-top: var(--space-10); text-align: center; }
 
 /* PDF (WeasyPrint): one card per page */
 @page { size: A4; margin: 12mm; }
