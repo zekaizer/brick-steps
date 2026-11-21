@@ -2,13 +2,11 @@
   <img src="design/brand/brick-steps-lockup.svg" alt="Brick Steps" width="420">
 </p>
 
-<p align="center"><b>AI와 함께 만들고, 한 단계씩 따라 해요</b><br>Designed with AI. Built step by step.</p>
+<p align="center"><b>Designed with AI. Built step by step.</b></p>
 
 Brick Steps is a set of original robots for LEGO® SPIKE™ Prime, designed together with AI and kept as LDraw models. Each robot is published as a step-by-step manual that elementary-school kids can follow on their own, on an iPad.
 
 **Manuals:** https://zekaizer.github.io/brick-steps/. You can add the site to an iPad home screen, and any manual you have opened keeps working offline.
-
-![The gallery, a build step and the finished screen on an iPad mini](docs/images/brick-steps-ipad.png)
 
 ## What's here
 
