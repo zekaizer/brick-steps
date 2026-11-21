@@ -9,6 +9,7 @@ import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 
 const DROP_MS = 600;
+const PLUG_TRAVEL = 50; // LDU a cable slides into its port when the cable card opens
 const VIEW_DIR = new THREE.Vector3(-1, 0.85, 1).normalize(); // front-left, from above
 const deck = document.getElementById("deck");
 const source = document.body.dataset.model3d;
@@ -53,7 +54,7 @@ function start(packed) {
   const outline = new LineMaterial({ color: yellow, linewidth: 2 });
   const glow = new Map();
   const sections = new Map();
-  let section = null, drop = null, queued = false, shownCard = null, cableGroup = null;
+  let section = null, drop = null, plugIn = null, queued = false, shownCard = null, cableGroup = null;
 
   function draw() {
     if (queued) return;
@@ -62,6 +63,12 @@ function start(packed) {
   }
   function tick(now) {
     queued = false;
+    if (plugIn) {
+      if (plugIn.t0 === null) plugIn.t0 = now;
+      const k = Math.min(1, (now - plugIn.t0) / DROP_MS), left = Math.pow(1 - k, 3);
+      for (const c of plugIn.cables) c.group.position.copy(c.out).multiplyScalar(left * PLUG_TRAVEL);
+      if (k === 1) plugIn = null; else draw();
+    }
     if (drop) {
       if (drop.t0 === null) drop.t0 = now;
       const k = Math.min(1, (now - drop.t0) / DROP_MS), left = Math.pow(1 - k, 3);
@@ -207,43 +214,86 @@ function start(packed) {
     cableGroup = null;
   }
 
-  // Cables in LDraw units, from each device to its hub port, each in its port's color. The line
-  // leaves the device sideways, runs up outside the hub's side and ends straight in the port with a
-  // plug, so the hub never hides it. Not the real cable route; the motor end has no plug because
-  // SPIKE motor cables do not come off.
+  // A flat ribbon along a curve: SPIKE cables are 6-wire ribbons, 18 LDU wide and about 4 thick.
+  // The wide side starts flat at the port end (`wide`) and is carried along the curve without
+  // twisting, so it enters the socket the way the real plug does.
+  const RIBBON_WIDTH = 18, RIBBON_THICK = 4;
+  function ribbon(curve, wide, samples = 80) {
+    const points = curve.getSpacedPoints(samples).reverse();  // walk from the port end
+    const positions = [], index = [];
+    let w = wide.clone();
+    for (let i = 0; i <= samples; i++) {
+      const t = points[Math.min(i + 1, samples)].clone().sub(points[Math.max(i - 1, 0)]).normalize();
+      w.addScaledVector(t, -w.dot(t)).normalize();
+      const n = t.clone().cross(w).normalize();
+      for (const [a, b] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) {
+        const v = points[i].clone().addScaledVector(w, a * RIBBON_WIDTH / 2).addScaledVector(n, b * RIBBON_THICK / 2);
+        positions.push(v.x, v.y, v.z);
+      }
+      if (i > 0) {
+        const p0 = (i - 1) * 4, p1 = i * 4;
+        for (let k = 0; k < 4; k++) {
+          const k2 = (k + 1) % 4;
+          index.push(p0 + k, p1 + k, p1 + k2, p0 + k, p1 + k2, p0 + k2);
+        }
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(index);
+    geometry.computeVertexNormals();
+    return geometry;
+  }
+
+  // Cables in LDraw units, from each device to its hub port, each in its port's color. The ribbon
+  // leaves the device sideways, runs up outside the hub's side and ends in a plug of the real size
+  // (23816a: 34 x 18 x 34), so the hub never hides it. Not the real cable route; the motor end has
+  // no plug because SPIKE motor cables do not come off.
   function drawCables(list) {
     cableGroup = new THREE.Group();
+    const moving = [];
+    const up = new THREE.Vector3(0, 1, 0);
     for (const c of list) {
       if (!c.to) continue;
       const color = token(`--port-${c.port.toLowerCase()}`) || token("--ink");
-      const material = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+      const material = new THREE.MeshStandardMaterial({ color, roughness: 0.6, side: THREE.DoubleSide });
       const from = new THREE.Vector3(...c.from), to = new THREE.Vector3(...c.to);
       const out = new THREE.Vector3(...c.out);
-      const side = to.clone().addScaledVector(out, 50);
+      const wide = up.clone().cross(out).normalize();  // the socket is wide along the hub's length
+      const side = to.clone().addScaledVector(out, 60);
       const reach = side.clone().sub(from).dot(out);  // how far to go out to clear the hub's side
       const besideDevice = from.clone().addScaledVector(out, reach);
       const curve = new THREE.CatmullRomCurve3(
-        [from, besideDevice, besideDevice.clone().lerp(side, 0.5), side, to.clone().addScaledVector(out, 22)],
+        [from, besideDevice, besideDevice.clone().lerp(side, 0.5), side, to.clone().addScaledVector(out, 17)],
         false, "centripetal");
-      cableGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 4, 8), material));
-      const plug = new THREE.Mesh(new THREE.BoxGeometry(22, 14, 18), material);
-      plug.position.copy(to).addScaledVector(out, 11);
-      plug.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), out);
-      cableGroup.add(plug);
+      const group = new THREE.Group();
+      group.add(new THREE.Mesh(ribbon(curve, wide), material));
+      const plug = new THREE.Mesh(new THREE.BoxGeometry(34, 18, 34), material);
+      plug.position.copy(to);  // half of the plug sits inside the socket
+      plug.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(out, up, out.clone().cross(up)));
+      group.add(plug);
+      cableGroup.add(group);
+      moving.push({ group, out });
       const label = portLabel(c.port, color);
-      label.position.copy(to).addScaledVector(out, 70);
+      label.position.copy(to).addScaledVector(out, 80);
       cableGroup.add(label);
     }
     section.root.add(cableGroup);
+    return moving;
   }
 
   function apply(figure, animate) {
     const shown = Number(figure.dataset.shown), fresh = Number(figure.dataset.fresh);
     drop = null;
+    plugIn = null;
     clearCables();
     const cables = figure.dataset.cables ? JSON.parse(figure.dataset.cables) : null;
     const keep = cables ? new Set(JSON.parse(figure.dataset.keep || "[]")) : null;
-    if (cables) drawCables(cables);
+    if (cables) {
+      const moving = drawCables(cables);
+      // The cables slide in from outside, so the child sees which way the plug goes into the port.
+      if (animate && !calm) plugIn = { cables: moving, t0: null };
+    }
     section.parts.forEach((p, i) => {
       p.group.position.copy(p.base);
       p.group.visible = i < shown;
@@ -255,7 +305,7 @@ function start(packed) {
       drop = { parts: section.parts.slice(shown - fresh, shown), t0: null, height: section.ball.radius * 0.9 };
     }
     controls.autoRotate = !fresh && !cables && !calm; // the finished model turns until touched
-    replay.hidden = !fresh || calm;
+    replay.hidden = (!fresh && !cables) || calm;
     draw();
   }
 
