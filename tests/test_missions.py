@@ -74,7 +74,7 @@ def test_blocks_html_draws_each_block_in_its_category_with_its_wording():
     assert html.count('class="block ') == 5
     assert 'class="block events"' in html and 'class="block control c"' in html
     assert BLOCKS["when_program_starts"].template in html
-    assert ">A+B<" in html.replace(" ", "")
+    assert ">A+B▾<" in html.replace(" ", "")
     assert html.index("repeat-body") < html.rindex("move")
 
 
@@ -89,3 +89,11 @@ def test_check_warns_about_blocks_whose_wording_is_not_checked_against_the_app()
     issues = check_missions(missions, {"A"})
     assert [(i.level, i.code) for i in issues] == [("warning", "block-wording-unchecked")]
     assert unchecked in issues[0].message
+
+
+def test_blocks_html_draws_numbers_as_inputs_and_choices_as_menus():
+    missions, _ = parse_missions(SQUARE)
+    html = blocks_html(missions[0].blocks)
+    assert '<span class="slot">2</span>' in html
+    assert '<span class="slot menu">A+B ▾</span>' in html
+    assert '<span class="slot menu">↑ ▾</span>' in html and '<span class="slot menu">회전 ▾</span>' in html

@@ -154,10 +154,17 @@ def _shown(kind: str, value: object) -> str:
 def _wording(b: BlockUse) -> str:
     spec = BLOCKS[b.block]
     slots = [_shown(k, a) for k, a in zip(spec.kinds, b.args)]
+    menus = [k != "number" for k in spec.kinds]
     if spec.joined:
-        slots = ["+".join(slots)]
-    return re.sub(r"\{(\d+)\}", lambda m: f'<span class="slot">{escape(slots[int(m.group(1))])}</span>',
-                  escape(spec.template, quote=False))
+        slots, menus = ["+".join(slots)], [any(menus)]
+
+    def slot(m: re.Match) -> str:
+        k = int(m.group(1))
+        if menus[k]:  # the app draws a choice as a dropdown in a darker shade of the block
+            return f'<span class="slot menu">{escape(slots[k])} ▾</span>'
+        return f'<span class="slot">{escape(slots[k])}</span>'
+
+    return re.sub(r"\{(\d+)\}", slot, escape(spec.template, quote=False))
 
 
 def blocks_html(blocks: tuple[BlockUse, ...]) -> str:

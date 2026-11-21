@@ -64,16 +64,25 @@ h1, p, figure { margin: 0; }
 /* Mission cards: SPIKE App word blocks (ADR 0003) */
 .intro { text-wrap: balance; }
 .mission-label { color: var(--ink-muted); }
-.blocks, .repeat-body { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-.block { border-radius: var(--radius-sm); color: var(--ink); }
+/* Word blocks drawn like the SPIKE App: stacked blocks joined by a notch on top and a tab below,
+   a rounded hat on event blocks, C-shaped repeat blocks, white number inputs and darker dropdowns. */
+.blocks, .repeat-body { list-style: none; margin: 0; padding: 0; display: grid; justify-items: start; }
+.blocks { --behind: var(--surface); padding-top: var(--space-4); }
+.repeat-body { --behind: var(--block-bg); margin-left: var(--space-6); }
+.block { position: relative; background: var(--block-bg); color: var(--ink); border-radius: var(--radius-sm); }
+.block.events { --block-bg: var(--block-events); border-top-left-radius: 0; }
+.block.control { --block-bg: var(--block-control); }
+.block.movement { --block-bg: var(--block-movement); }
+.block.motors { --block-bg: var(--block-motors); }
+.block::before, .block::after { content: ""; position: absolute; left: var(--space-4); width: var(--space-6); height: 6px; clip-path: polygon(0 0, 100% 0, 75% 100%, 25% 100%); }
+.block::before { top: 0; background: var(--behind); }
+.block::after { top: 100%; background: var(--block-bg); z-index: 1; }
+.block.events::before { left: 0; top: auto; bottom: 100%; width: calc(2 * var(--space-10)); height: var(--space-4); background: var(--block-bg); clip-path: none; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
+.block.events > .block-text::before { content: "▶"; }
 .block-text { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); }
-.block.c { padding-bottom: var(--space-4); }
-.repeat-body { margin-left: var(--space-6); }
-.block.events { background: var(--block-events); }
-.block.control { background: var(--block-control); }
-.block.movement { background: var(--block-movement); }
-.block.motors { background: var(--block-motors); }
+.block.c { padding-bottom: var(--space-6); }
 .slot { background: var(--surface); color: var(--ink); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
+.slot.menu { background: color-mix(in srgb, var(--block-bg) 45%, var(--ink)); color: var(--surface); }
 .try { background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); }
 
 /* Hidden lab of drafts */
