@@ -22,6 +22,7 @@ Original LEGO SPIKE Prime builds: LDraw models, kit-constrained BOM checks, buil
 - `uv run lc instructions <slug> [--no-pdf]` — one manual (HTML + PDF) into `models/<slug>/out/manual/`
 - `uv run lc site [--include-drafts] [--no-pdf]` — gallery + manuals into `site/` (what GitHub Pages serves)
 - `uv run lc fetch-ldraw`, `uv run lc import-inventory 45678-1 45681-1`
+- `uv run lc release-check vX.Y.Z` — tag, pyproject and CHANGELOG agree; prints release notes
 - `uv run pytest`
 
 ## Rules
@@ -32,3 +33,4 @@ Original LEGO SPIKE Prime builds: LDraw models, kit-constrained BOM checks, buil
 - `lc validate` checks line syntax, rotation matrices (proper rotation, det +1), color codes against LDConfig, part resolution, aliases, kit inventory and ports. It does not check physical connectivity, collisions, grid alignment or mechanism behaviour; those need human review in a viewer (LeoCAD/LDCad) or on the real build.
 - Instruction export needs LeoCAD 25.09, Xvfb and Pango (ADR 0001). The site is kid-facing Korean; only `status: ready` models are published.
 - Site look follows the Brick Steps design system, a private claude.ai artifact (link in `CLAUDE.local.md`). Read its README before changing `site_assets/components.css`; every value there must come from a token.
+- Add a line under `## [Unreleased]` in `CHANGELOG.md` in the same commit as any user-visible change. Releases follow `docs/releasing.md`: 0.0.z is the beta series and only PATCH is bumped until the maintainer says otherwise.

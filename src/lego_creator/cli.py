@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import sys
+import tomllib
 import urllib.request
 import zipfile
 from collections import Counter
@@ -22,6 +23,7 @@ from .bom import Bom, load_id_map, load_inventory, load_unknown_parts
 from .export import ExportEnv, build_manual, build_site, write_assets
 from .ldraw import Library, flatten, parse
 from .rebrickable import extract_set_inventory
+from .release import check_release, release_notes
 from .validate import validate
 
 # Editable install: src/lego_creator/cli.py -> repo root.
@@ -206,6 +208,18 @@ def cmd_instructions(root: Path, _lib: Library, args: argparse.Namespace) -> int
     return 0
 
 
+def cmd_release_check(root: Path, _lib: Library, args: argparse.Namespace) -> int:
+    version = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+    changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")
+    problems = check_release(args.tag, version, changelog)
+    for p in problems:
+        print(f"error: {p}", file=sys.stderr)
+    if problems:
+        return 1
+    print(release_notes(changelog, args.tag.removeprefix("v")))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="lc", description="LEGO SPIKE Prime model tooling")
     p.add_argument("--root", type=Path, default=Path(os.environ.get("LC_ROOT", DEFAULT_ROOT)))
@@ -238,6 +252,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--include-drafts", action="store_true", help="also publish models whose status is not ready")
     s.add_argument("--no-pdf", action="store_true")
     s.set_defaults(func=cmd_site)
+
+    s = sub.add_parser("release-check", help="check tag, pyproject and CHANGELOG agree; print the release notes")
+    s.add_argument("tag", help="e.g. v0.0.1")
+    s.set_defaults(func=cmd_release_check)
 
     s = sub.add_parser("fetch-ldraw", help="download and extract the official LDraw library")
     s.set_defaults(func=cmd_fetch_ldraw)

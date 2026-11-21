@@ -114,3 +114,11 @@ def test_download_sends_a_tool_user_agent(tmp_path, monkeypatch):
     out = cli._download("https://example.invalid/x.zip", tmp_path / "x.zip")
     assert out.read_bytes() == b"payload"
     assert seen["ua"] and seen["ua"].startswith("lego-creator/") and "Python-urllib" not in seen["ua"]
+
+
+def test_release_check_prints_notes_or_fails(tmp_path, capsys):
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\nversion = "0.0.2"\n')
+    (tmp_path / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n\n## [0.0.2] - 2026-12-01\n\n### Fixed\n- A bug\n")
+    assert main(["--root", str(tmp_path), "release-check", "v0.0.2"]) == 0
+    assert capsys.readouterr().out.strip() == "### Fixed\n- A bug"
+    assert main(["--root", str(tmp_path), "release-check", "v0.0.3"]) == 1

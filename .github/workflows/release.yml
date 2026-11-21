@@ -1,0 +1,26 @@
+# Create a GitHub release when a vX.Y.Z tag is pushed (docs/releasing.md).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Check tag, pyproject and CHANGELOG; extract release notes
+        run: uv run --frozen lc release-check "$GITHUB_REF_NAME" > notes.md
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 0.0.z is the beta series: publish as pre-release.
+          flags=""
+          case "$GITHUB_REF_NAME" in v0.0.*) flags="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag $flags
