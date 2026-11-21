@@ -228,3 +228,38 @@ def test_cable_card_in_print_has_no_3d_hooks():
     html = manual_html(VIEW_CABLES, assets="./", print_mode=True)
     card = html[html.index('id="cables"'):html.index('id="step-2"')]
     assert "케이블을 꽂아요" in card and "data-cables" not in card
+
+
+def _card(html: str, card_id: str) -> str:
+    start = html.index(f'id="{card_id}"')
+    return html[start:html.index("</section>", start)]
+
+
+def test_every_card_splits_into_info_and_picture():
+    html = manual_html(VIEW_CABLES, assets="../assets/")
+    for card_id in ("cover", "step-1", "cables", "done"):
+        card = _card(html, card_id)
+        assert '<div class="side">' in card and '<div class="main">' in card, card_id
+        assert card.index('<div class="side">') < card.index('<div class="main">'), card_id
+    step = _card(html, "step-1")
+    side, main = step.split('<div class="main">')
+    assert "step-head" in side and "<figure" in main and "<figure" not in side
+    assert 'class="hero"' in _card(html, "cover").split('<div class="main">')[1]
+
+
+def test_mission_card_puts_the_blocks_beside_the_goal():
+    view = ManualView("t", "t", 1, "h.png", [StepView(1, "a.png")],
+                      missions=[MissionView("앞뒤로", "앞으로 가요.", '<ul class="blocks"></ul>', "바꿔 봐요")])
+    side, main = _card(manual_html(view, assets="./"), "mission-1").split('<div class="main">')
+    assert "앞뒤로" in side and "바꿔 봐요" in side and 'class="blocks"' in main
+
+
+def test_web_manifest_allows_both_orientations():
+    assert json.loads(web_manifest("#fff"))["orientation"] == "any"
+
+
+def test_site_css_has_a_landscape_layout_and_fills_the_screen():
+    from pathlib import Path
+
+    css = (Path(__file__).resolve().parents[1] / "src" / "lego_creator" / "site_assets" / "components.css").read_text()
+    assert "(orientation: landscape)" in css and "var(--side-panel)" in css and "100dvh" in css

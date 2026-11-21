@@ -130,6 +130,11 @@ def _tray(items: list[TrayItem]) -> str:
     )
 
 
+def _split(side: str, main: str) -> str:
+    """A card's info and its picture: stacked in portrait, side by side in landscape (components.css)."""
+    return f'<div class="side">{side}</div><div class="main">{main}</div>'
+
+
 def _cable_card(c: CableView, hooks: str, with_3d: bool) -> str:
     items = "".join(
         f'<li><span class="port port-{_e(it.port.lower())} t-heading">{_e(it.port)}</span>'
@@ -137,14 +142,14 @@ def _cable_card(c: CableView, hooks: str, with_3d: bool) -> str:
         for it in c.items
     )
     lines = f' data-cables="{_e(c.lines)}" data-keep="{_e(c.keep)}"' if with_3d and hooks else ""
-    return (
-        '<section class="card cable" id="cables">'
+    side = (
         '<h2 class="t-heading">케이블을 꽂아요</h2>'
         '<p class="t-body">같은 글자가 적힌 포트에 꽂아요.</p>'
         f'<ul class="cable-list">{items}</ul>'
-        f'<figure class="step-img"{hooks}{lines}><img src="{_e(c.image)}" alt="케이블을 꽂는 모습" loading="lazy"></figure>'
-        "</section>"
     )
+    figure = f'<figure class="step-img"{hooks}{lines}><img src="{_e(c.image)}" alt="케이블을 꽂는 모습" loading="lazy"></figure>'
+    return f'<section class="card cable" id="cables">{_split(side, figure)}</section>'
+
 
 
 def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifest: str | None = None,
@@ -161,52 +166,47 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
             return ""
         return f' data-sub="{_e(sub)}" data-shown="{shown}" data-fresh="{fresh}"'
 
-    cards = [
-        '<section class="card cover" id="cover">'
-        + ('<p class="draft-note t-body">아직 만들어 보지 않은 설계예요. 부품이 안 맞을 수 있어요.</p>' if view.draft else "")
-        +
-        f'<h1 class="t-title">{_e(view.name)}</h1>'
-        f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}">'
+    cover = (
+        ('<p class="draft-note t-body">아직 만들어 보지 않은 설계예요. 부품이 안 맞을 수 있어요.</p>' if view.draft else "")
+        + f'<h1 class="t-title">{_e(view.name)}</h1>'
         + (f'<p class="t-body intro">{_e(view.intro)}</p>' if view.intro else "")
         + f'<p class="t-body">부품 {view.part_count}개 · {total}단계</p>'
         + (f'<p class="t-caption"><a href="{_e(view.pdf)}">PDF로 보기</a></p>' if view.pdf and not print_mode else "")
-        + "</section>"
-    ]
+    )
+    hero = f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}">'
+    cards = [f'<section class="card cover" id="cover">{_split(cover, hero)}</section>']
     for step in view.steps:
         pct = round(100 * step.number / total) if total else 100
         label = f'<p class="sub-label t-caption">{_e(step.section_title)}</p>' if step.section_title else ""
-        cards.append(
-            f'<section class="card step" id="step-{step.number}">'
+        side = (
             '<div class="step-head">'
             f'<span class="t-step-number">{step.number}</span>'
             f'<span class="t-caption">{step.number} / {total} 단계</span>'
             "</div>"
             f'<div class="progress" aria-hidden="true"><i style="width:{pct}%"></i></div>'
             f"{label}{_tray(step.tray)}"
-            f'<figure class="step-img"{hooks(step.sub, step.shown, step.fresh)}><img src="{_e(step.image)}" alt="{step.number}단계 조립 모습" loading="lazy"></figure>'
-            "</section>"
         )
+        figure = (f'<figure class="step-img"{hooks(step.sub, step.shown, step.fresh)}>'
+                  f'<img src="{_e(step.image)}" alt="{step.number}단계 조립 모습" loading="lazy"></figure>')
+        cards.append(f'<section class="card step" id="step-{step.number}">{_split(side, figure)}</section>')
         if view.cables and view.cables.after == step.number:
             cards.append(_cable_card(view.cables, hooks(view.cables.sub, view.cables.shown, 0), with_3d))
-    cards.append(
-        '<section class="card done" id="done">'
+    done = (
         '<p class="badge t-heading">완성!</p>'
         f'<h1 class="t-title">{_e(view.name)}</h1>'
-        f'<figure class="step-img"{hooks(view.main_sub, view.done_shown, 0)}>'
-        f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}"></figure>'
         + ('<p class="t-caption credit">부품 모양은 LDraw.org Parts Library(CC BY 4.0)에서 왔어요.</p>' if with_3d else "")
-        + "</section>"
     )
+    figure = (f'<figure class="step-img"{hooks(view.main_sub, view.done_shown, 0)}>'
+              f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}"></figure>')
+    cards.append(f'<section class="card done" id="done">{_split(done, figure)}</section>')
     for k, mission in enumerate(view.missions, 1):
-        cards.append(
-            f'<section class="card mission" id="mission-{k}">'
+        side = (
             f'<p class="mission-label t-caption">움직여 보기 {k} / {len(view.missions)}</p>'
             f'<h2 class="t-heading">{_e(mission.title)}</h2>'
             + (f'<p class="t-body">{_e(mission.goal)}</p>' if mission.goal else "")
-            + mission.blocks
             + (f'<p class="try t-body">{_e(mission.try_)}</p>' if mission.try_ else "")
-            + "</section>"
         )
+        cards.append(f'<section class="card mission" id="mission-{k}">{_split(side, mission.blocks)}</section>')
     if print_mode:
         body_attrs = ' class="manual print"'
     else:
@@ -286,7 +286,7 @@ def web_manifest(paper: str) -> str:
         "start_url": "./",
         "scope": "./",
         "display": "standalone",
-        "orientation": "portrait",
+        "orientation": "any",
         "background_color": paper,
         "theme_color": paper,
         "icons": [

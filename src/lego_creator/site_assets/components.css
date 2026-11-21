@@ -28,12 +28,41 @@ h1, p, figure { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .deck.js .card.on { animation: none; } }
 
 .hero { width: 100%; height: auto; border-radius: var(--radius-md); background: var(--paper); display: block; }
-.cover, .done { justify-items: center; text-align: center; }
+.cover .side, .done .side { justify-items: center; text-align: center; }
+
+/* One card fills the screen in both orientations: the info takes what it needs, the picture the rest.
+   Landscape (iPad mini 1133 x 744) puts the info in a side panel left of the picture. */
+.side { display: grid; gap: var(--space-4); align-content: start; }
+.manual .deck.js {
+  height: 100dvh; grid-template-rows: minmax(0, 1fr);
+  padding-block: calc(var(--space-4) + env(safe-area-inset-top, 0px)) calc(var(--tap-min) + 2 * var(--space-4) + env(safe-area-inset-bottom, 0px));
+}
+.deck.js .card.on { display: flex; flex-direction: column; gap: var(--space-4); min-height: 0; }
+.deck.js .main { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; }
+.deck.js .main > .step-img { height: 100%; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; }
+.deck.js .main .stage3d { aspect-ratio: auto; width: 100%; height: 100%; }
+.deck.js .main img { max-height: 100%; width: auto; object-fit: contain; }
+.deck.js .mission .main { place-items: start; overflow: auto; }
+@media (orientation: landscape) and (min-width: 900px) {
+  .manual .deck.js { max-width: none; padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); }
+  .deck.js .card.on { display: grid; grid-template-columns: var(--side-panel) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: var(--space-6); }
+  /* Room at the bottom of the panel for the pager, which sits there in landscape. */
+  .deck.js .side { min-height: 0; overflow: auto; padding-bottom: calc(var(--tap-min) + var(--space-4)); }
+  .deck.js .cover .side, .deck.js .done .side { align-content: center; }
+  .deck.js .main { height: 100%; }
+  .pager {
+    left: calc(2 * var(--space-4) + env(safe-area-inset-left, 0px)); right: auto;
+    bottom: calc(2 * var(--space-4) + env(safe-area-inset-bottom, 0px));
+    width: var(--side-panel); padding: 0; background: none;
+  }
+  .gallery .wrap { max-width: var(--page-wide); }
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 
 /* Step */
 .step-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
 .step-head .t-caption { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
-.progress { height: 8px; border-radius: var(--radius-pill); background: var(--paper); overflow: hidden; margin-top: calc(-1 * var(--space-4)); }
+.progress { height: 8px; border-radius: var(--radius-pill); background: var(--paper); overflow: hidden; }
 .progress > i { display: block; height: 100%; background: var(--azure); border-radius: inherit; }
 .sub-label { justify-self: start; background: var(--magenta); color: var(--surface); border-radius: var(--radius-pill); padding: var(--space-2) var(--space-4); }
 

@@ -17,6 +17,7 @@ All notable changes to this project are recorded here. The format follows
 - A hidden lab at `/lab/` shows models that are still drafts, marked as untested. Tap the gallery logo five times to open it.
 
 ### Changed
+- Manuals fit one card on the iPad mini screen without scrolling, in portrait and in landscape. In landscape the step number, parts and buttons sit in a panel beside a larger picture, and the gallery shows three models per row.
 - `lc site` always builds drafts into the lab; `--include-drafts` is gone.
 - Models no longer keep Pybricks programs. Children program in the SPIKE App with word blocks, so `lc new` writes `missions.yaml` instead of `program/main.py`.
 - Headings use Lexend with Noto Sans KR instead of Jua.
