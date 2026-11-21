@@ -84,7 +84,7 @@ class GalleryCard:
     based_on: str | None = None
 
 
-FONTS = "https://fonts.googleapis.com/css2?family=Lexend:wght@600&family=Noto+Sans+KR:wght@400;500;700&display=swap"
+FONTS = "https://fonts.googleapis.com/css2?family=Lexend:wght@600&family=Noto+Sans+KR:wght@400;500;700&display=optional"
 TAGLINE = "AI와 함께 만들고, 한 단계씩 따라 해요"
 MAKER = "만든 사람 Luke Lee"
 
@@ -225,11 +225,11 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
     hero = f'<img class="hero" src="{_e(view.hero)}" alt="완성된 {_e(view.name)}">'
     cards = [f'<section class="card cover" id="cover">{_split(cover, hero)}</section>']
     for step in view.steps:
-        label = f'<p class="sub-label t-caption">{_e(step.section_title)}</p>' if step.section_title else ""
+        label = f'<p class="sub-label t-button">{_e(step.section_title)}</p>' if step.section_title else ""
         side = (
             '<div class="step-head">'
             f'<span class="t-step-number">{step.number}</span>'
-            f'<span class="t-caption">{step.number} / {total} 단계</span>'
+            f'<span class="step-total t-body">{step.number} / {total} 단계</span>'
             "</div>"
             f"{label}{_tray(step.tray)}"
         )
@@ -239,7 +239,7 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
         if view.cables and view.cables.after == step.number:
             cards.append(_cable_card(view.cables, hooks(view.cables.sub, view.cables.shown, 0), with_3d))
     done = (
-        '<p class="badge t-heading">완성!</p>'
+        '<p class="badge t-title">완성!</p>'
         f'<h1 class="t-title">{_e(view.name)}</h1>'
         + ('<p class="t-caption credit">부품 모양은 LDraw.org Parts Library(CC BY 4.0)에서 왔어요.</p>' if with_3d else "")
         + f'<p class="t-caption credit">{MAKER}</p>'
@@ -249,7 +249,7 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
     cards.append(f'<section class="card done" id="done" data-chapter="done">{_split(done, figure)}</section>')
     for k, mission in enumerate(view.missions, 1):
         side = (
-            f'<p class="mission-label t-caption">움직여 보기 {k} / {len(view.missions)}</p>'
+            f'<p class="mission-label t-body">움직여 보기 {k} / {len(view.missions)}</p>'
             f'<h2 class="t-heading">{_e(mission.title)}</h2>'
             + (f'<p class="t-body">{_e(mission.goal)}</p>' if mission.goal else "")
             + (f'<p class="try t-body">{_e(mission.try_)}</p>' if mission.try_ else "")
@@ -327,9 +327,9 @@ def _map(cards: list[GalleryCard]) -> str:
                 f'<a class="stop" href="{_e(c.slug)}/" style="left:{x:.2f}%;top:{y:.2f}%" data-name="{_e(c.name)}" '
                 f'data-img="{_e(c.image)}" data-story="{_e(c.story or "")}" '
                 f'data-meta="부품 {c.part_count}개 · {c.step_count}단계"{source}>'
-                '<span class="here t-caption">다음은 여기!</span>'
+                '<span class="here t-body">다음은 여기!</span>'
                 f'<span class="disc"><img src="{_e(c.image)}" alt="" loading="lazy"></span>'
-                '<span class="tick t-caption">✓ 다 만들었어요</span>'
+                '<span class="tick t-body">✓ 다 만들었어요</span>'
                 f'<span class="label t-heading">{_e(c.name)}</span></a>'
             )
         x, y = pts[-1]
@@ -367,12 +367,14 @@ def gallery_html(cards: list[GalleryCard], *, lab: bool = False, version: str | 
     if cards:
         body = _map(cards)
     else:
-        body = f'<p class="t-body empty">{"실험실이 비어 있어요." if lab else "아직 완성된 작품이 없어요."}</p>'
+        title, line = ("실험실이 비어 있어요", "새 설계가 생기면 여기에 나와요.") if lab else ("첫 작품을 만들고 있어요", "곧 여기에서 만나요!")
+        body = (f'<div class="empty"><img src="{up}brand/brick-steps-mark.svg" alt="" width="96" height="96">'
+                f'<p class="t-title">{title}</p><p class="t-body">{line}</p></div>')
     if lab:
-        heading = ('<div class="map-title"><p class="t-caption"><a href="../">‹ 갤러리로</a></p>'
-                   '<h1 class="t-title">실험실</h1><p class="t-caption">아직 만들어 보지 않은 설계예요.</p></div>')
+        heading = ('<div class="map-title"><a class="back t-button" href="../">‹ 갤러리로</a>'
+                   '<div><h1 class="t-title">실험실</h1><p class="t-body">아직 만들어 보지 않은 설계예요.</p></div></div>')
     else:
-        heading = '<h1 class="map-title t-heading">어디로 가 볼까요?</h1>'
+        heading = '<h1 class="map-title t-title">어디로 가 볼까요?</h1>' if cards else ""
     return "\n".join([
         _head("Brick Steps 실험실" if lab else "Brick Steps", assets=f"{up}assets/", manifest=f"{up}manifest.webmanifest",
               print_mode=False, noindex=lab),
@@ -382,7 +384,7 @@ def gallery_html(cards: list[GalleryCard], *, lab: bool = False, version: str | 
             f'<div class="brand-box"><img class="brand" src="{up}brand/brick-steps-lockup.svg" alt="Brick Steps" width="488" height="113">'
             f'<p class="tagline t-caption">{TAGLINE}</p></div>'
             f'{heading}</header>{body}'
-            f'<footer class="site-foot t-caption">Brick Steps{" " + _e(version) if version else ""} · {MAKER}</footer></main>'
+            f'<footer class="site-foot t-caption">Brick Steps{" v" + _e(version) if version else ""} · {MAKER}</footer></main>'
         ),
         f'<script src="{up}assets/manual.js" defer></script>',
         "</body>\n</html>\n",

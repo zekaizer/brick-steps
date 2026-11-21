@@ -1,4 +1,4 @@
-// Brick Steps: one card per screen, buttons + swipe + arrow keys, section bar + contents jumps,
+// Brick Steps: one card per screen, buttons + arrow keys, section bar + contents jumps (no swipe: it fired by mistake),
 // resume via hash, offline via service worker.
 (function () {
   "use strict";
@@ -86,6 +86,11 @@
       });
     });
     sheet.querySelector(".x").addEventListener("click", close);
+    // A tap anywhere off the sheet closes it; a tap on another stop opens that one instead.
+    document.addEventListener("click", function (e) {
+      if (sheet.hidden || sheet.contains(e.target) || e.target.closest("a.stop")) return;
+      close();
+    });
     clear.addEventListener("click", function () {
       if (!armed) { armed = true; clear.textContent = "한 번 더 누르면 ‘다 만들었어요’ 표시만 지워요"; return; }
       var path = pathOf(openStop);
@@ -170,6 +175,14 @@
   function back() { show(current - 1, -1); }
 
   deck.classList.add("js");
+  // Keep the screen on while a child builds: the iPad sits on the table between taps.
+  // Wake locks end when the page is hidden, so take it again on return. Unsupported browsers just skip this.
+  function stayAwake() {
+    if (document.visibilityState !== "visible" || !navigator.wakeLock) return;
+    navigator.wakeLock.request("screen").catch(function () {});
+  }
+  document.addEventListener("visibilitychange", stayAwake);
+  stayAwake();
   pager.hidden = false;
   prev.addEventListener("click", back);
   next.addEventListener("click", forward);
@@ -202,18 +215,6 @@
   window.addEventListener("hashchange", function () {
     var k = indexOf(location.hash.slice(1));
     if (k >= 0 && k !== current) show(k, 0);
-  });
-
-  var startX = null;
-  deck.addEventListener("touchstart", function (e) {
-    // A drag on the 3D view turns the model; it must not also turn the page.
-    startX = e.target.closest(".stage3d") ? null : e.touches[0].clientX;
-  }, { passive: true });
-  deck.addEventListener("touchend", function (e) {
-    if (startX === null) return;
-    var dx = e.changedTouches[0].clientX - startX;
-    startX = null;
-    if (Math.abs(dx) > 60) (dx < 0 ? forward : back)();
   });
 
   var saved = null;

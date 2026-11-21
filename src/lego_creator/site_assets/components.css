@@ -1,7 +1,16 @@
 /* Brick Steps components. Every value comes from a design token (see design/brick-steps.tokens.json). */
-*, *::before, *::after { box-sizing: border-box; }
-/* manipulation: no double-tap zoom on iPad (pinch zoom still works), so quick taps stay taps. */
-html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+/* Touch, for children on an iPad:
+   - manipulation on every element: no double-tap zoom anywhere (pinch zoom still works). WebKit does not pass
+     touch-action down from <html>, and the 3D canvas overrides it with none further down.
+   - no text selection, long-press menus or image dragging: a held finger should do nothing, not open a menu.
+   - no grey tap flash and no rubber-band scrolling; pressed things shrink a little instead (below). */
+*, *::before, *::after { box-sizing: border-box; touch-action: manipulation; }
+html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+img { -webkit-user-drag: none; }
+button, .chapter, .tile, .stop, .back, .sheet .go { transition: scale 80ms ease-out; }
+button:active, .chapter:active, .tile:active, .stop:active, .back:active, .sheet .go:active { scale: 0.96; }
+@media (prefers-reduced-motion: reduce) { button, .chapter, .tile, .stop, .back, .sheet .go { transition: none; } }
 /* keep-all: Korean lines break between words, not inside them. */
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); word-break: keep-all; overflow-wrap: break-word; }
 img { max-width: 100%; }
@@ -98,18 +107,20 @@ h1, p, figure { margin: 0; }
 }
 
 /* Step */
-.step-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
-.step-head .t-caption { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+/* The total sits right after the big number, so "4 / 15 단계" reads as one phrase. */
+.step-head { display: flex; align-items: baseline; gap: var(--space-4); }
+.step-total { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .sub-label { justify-self: start; background: var(--magenta); color: var(--surface); border-radius: var(--radius-pill); padding: var(--space-2) var(--space-4); }
 
 /* Parts tray */
 .tray { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--line); }
 .tray-head { background: var(--yellow); color: var(--ink); padding: var(--space-2) var(--space-4); }
 .tray ul { list-style: none; margin: 0; padding: var(--space-4); display: flex; flex-wrap: wrap; gap: var(--space-4); }
-.tray li { display: flex; align-items: center; gap: var(--space-2); }
+/* The count sits on the thumbnail's corner, so two parts fit side by side in the landscape panel. */
+.tray li { position: relative; padding: 0 var(--space-2) var(--space-2) 0; }
 .tray img { width: var(--thumb); height: var(--thumb); object-fit: contain; border-radius: var(--radius-sm); background: var(--paper); }
 .tray li.sub img { outline: 3px solid var(--magenta); outline-offset: -3px; }
-.count { background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2); font-family: var(--font-display); }
+.count { position: absolute; right: 0; bottom: 0; background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2); font-family: var(--font-display); }
 
 .step-img img { width: 100%; height: auto; display: block; border-radius: var(--radius-md); background: var(--paper); }
 
@@ -148,7 +159,7 @@ h1, p, figure { margin: 0; }
 .block.c { padding-bottom: var(--space-6); }
 .slot { background: var(--surface); color: var(--ink); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
 .slot.menu { background: color-mix(in srgb, var(--block-bg) 45%, var(--ink)); color: var(--surface); }
-.try { background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); }
+.try { justify-self: start; background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); }
 
 /* Cable card: which device goes into which hub port */
 .cable-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
@@ -177,8 +188,9 @@ h1, p, figure { margin: 0; }
 }
 .pager-in { max-width: var(--page-max); margin: 0 auto; display: flex; gap: var(--space-4); }
 .pager button { min-height: var(--tap-min); border-radius: var(--radius-pill); border: 0; cursor: pointer; color: var(--ink); padding: 0 var(--space-6); }
-.pager .prev { flex: 1; background: var(--surface); border: 3px solid var(--azure-deep); }
-.pager .next { flex: 2; background: var(--azure); }
+.pager .prev { flex: 0 0 auto; min-width: calc(3 * var(--tap-min)); background: var(--surface); border: 3px solid var(--azure-deep); }
+/* Sized to their words, not stretched across the screen; Next stays the wider one, at the far end. */
+.pager .next { flex: 0 0 auto; min-width: calc(5 * var(--tap-min)); margin-left: auto; background: var(--azure); }
 .pager button:disabled { visibility: hidden; }
 
 /* Adventure map: home and lab. A road per series, a stop per model (site.gallery_html). */
@@ -186,10 +198,18 @@ h1, p, figure { margin: 0; }
   min-height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: var(--space-4);
   padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) max(var(--space-4), env(safe-area-inset-right, 0px)) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)) max(var(--space-4), env(safe-area-inset-left, 0px));
 }
-.site-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); }
-.brand-box, .map-title { display: grid; gap: var(--space-2); margin: 0; }
+.site-head { display: grid; gap: var(--space-4); justify-items: start; }
+.brand-box { display: grid; gap: var(--space-2); }
+.map-title { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); }
+.map-title h1, .map-title p { margin: 0; }
+.back {
+  min-height: var(--tap-min); padding: 0 var(--space-6); border-radius: var(--radius-pill); display: inline-grid; place-items: center;
+  background: var(--surface); border: 3px solid var(--azure-deep); color: var(--ink); text-decoration: none;
+}
 .site-head .brand { height: var(--tap-min); width: auto; max-width: 100%; }
-.tagline, .empty, .site-foot, .version { color: var(--ink-muted); }
+.tagline, .site-foot, .version, .map-title .t-body { color: var(--ink-muted); }
+.empty { align-self: center; justify-self: center; display: grid; justify-items: center; gap: var(--space-2); text-align: center; }
+.empty .t-body { color: var(--ink-muted); }
 .site-foot { text-align: center; }
 .map {
   position: relative; overflow: hidden;
@@ -275,6 +295,9 @@ h1, p, figure { margin: 0; }
     bottom: calc(2 * var(--space-4) + env(safe-area-inset-bottom, 0px));
     width: var(--side-panel); padding: 0; background: none;
   }
+  .pager .prev { flex: 1; min-width: 0; }
+  .pager .next { flex: 2; min-width: 0; }
+  .deck.js .mission .main { place-items: center; }
   .chapters { padding-left: max(var(--space-4), env(safe-area-inset-left, 0px)); padding-right: max(var(--space-4), env(safe-area-inset-right, 0px)); }
   .tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }

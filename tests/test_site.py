@@ -43,7 +43,8 @@ def test_manual_html_has_cover_steps_and_done_cards():
     assert "탱크 로봇" in html and "부품 42개 · 2단계" in html
     assert "1 / 2 단계" in html and "2 / 2 단계" in html
     assert "필요한 부품" in html and "×2" in html
-    assert 'class="sub-label t-caption">바퀴 묶음<' in html
+    assert 'class="sub-label t-button">바퀴 묶음<' in html
+    assert '<span class="step-total t-body">1 / 2 단계</span>' in html
     assert 'class="sub"' in html
     assert 'href="manual.pdf"' in html
 
@@ -62,7 +63,9 @@ def test_gallery_lists_cards_and_has_empty_state():
     html = gallery_html([GalleryCard("tank", "탱크 로봇", "tank/img/hero.png", 42, 12)])
     assert 'href="tank/"' in html and "부품 42개 · 12단계" in html and "어디로 가 볼까요?" in html
     assert 'rel="manifest"' in html
-    assert "아직 완성된 작품이 없어요" in gallery_html([])
+    empty = gallery_html([])
+    assert "첫 작품을 만들고 있어요" in empty and 'src="brand/brick-steps-mark.svg"' in empty
+    assert "어디로 가 볼까요?" not in empty
 
 
 def test_web_manifest_is_standalone_app():
@@ -96,6 +99,12 @@ def test_draft_manual_says_it_is_untested_and_hides_from_search():
     assert '<meta name="robots" content="noindex">' in html and "아직 만들어 보지 않은 설계예요" in html
     plain = manual_html(VIEW, assets="./")
     assert "noindex" not in plain and "아직 만들어 보지 않은" not in plain
+
+
+def test_fonts_never_swap_in_after_the_page_is_shown():
+    from lego_creator.site import FONTS
+
+    assert "display=optional" in FONTS and "display=swap" not in FONTS
 
 
 def test_pages_load_brand_fonts_and_favicons():
@@ -196,7 +205,10 @@ def test_site_css_stops_double_tap_zoom():
     from pathlib import Path
 
     css = (Path(__file__).resolve().parents[1] / "src" / "lego_creator" / "site_assets" / "components.css").read_text()
-    assert "touch-action: manipulation" in css
+    # WebKit does not pass touch-action down from <html>, so every element carries it.
+    assert "*, *::before, *::after { box-sizing: border-box; touch-action: manipulation; }" in css
+    assert "user-select: none" in css and "-webkit-touch-callout: none" in css
+    assert "overscroll-behavior: none" in css and "-webkit-tap-highlight-color: transparent" in css
 
 
 VIEW_CABLES = ManualView(
@@ -330,7 +342,7 @@ def test_cover_shows_the_model_version_and_done_names_the_maker():
 def test_gallery_and_lab_footer_show_site_version_and_maker():
     for html in (gallery_html([], version="0.0.1"), gallery_html([], lab=True, version="0.0.1")):
         foot = html[html.index("<footer"):html.index("</footer>")]
-        assert "Brick Steps 0.0.1" in foot and "만든 사람 Luke Lee" in foot
+        assert "Brick Steps v0.0.1" in foot and "만든 사람 Luke Lee" in foot
 
 
 MAP = [
@@ -384,3 +396,13 @@ def test_map_has_a_sheet_to_start_or_clear_a_build():
 def test_map_stops_have_next_and_built_marks_for_the_script():
     html = gallery_html(MAP)
     assert html.count("다음은 여기!") == 3 and html.count("✓ 다 만들었어요") == 3
+
+
+def test_kids_read_and_tap_the_important_bits_at_full_size():
+    lab = gallery_html([], lab=True)
+    assert '<a class="back t-button" href="../">‹ 갤러리로</a>' in lab
+    html = gallery_html(MAP)
+    assert '<span class="here t-body">다음은 여기!</span>' in html
+    view = ManualView("t", "t", 1, "h.png", [StepView(1, "a.png")], missions=[MissionView("앞뒤로", "", "")])
+    page = manual_html(view, assets="./")
+    assert 'class="mission-label t-body"' in page and 'class="badge t-title">완성!<' in page

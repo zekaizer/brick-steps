@@ -7,6 +7,7 @@ All notable changes to this project are recorded here. The format follows
 ## [Unreleased]
 
 ### Added
+- The screen stays on while a manual is open (where the browser supports it), so the iPad does not lock between steps.
 - `lc validate` warns when a moving sub-assembly declared with `0 !LC TURN` runs into the rest of the model within its declared range, and when a part comes within a plate of the floor set by `0 !LC GROUND` (wheels, tracks). Both are box approximations.
 - Brick Steps branding: a logo of two stacked bricks with sparkles, the tagline "AI와 함께 만들고, 한 단계씩 따라 해요", app and maskable icons, and favicons. The gallery shows the logo and tagline.
 - Manuals show each step as a 3D model that can be turned with a finger. New parts drop into place with a yellow outline, and the finished model turns on the last screen. Devices without WebGL, and the PDF, keep the rendered pictures.
@@ -20,6 +21,11 @@ All notable changes to this project are recorded here. The format follows
 - A hidden lab at `/lab/` shows models that are still drafts, marked as untested. Tap the gallery logo five times to open it.
 
 ### Changed
+- Buttons are lighter: everything a child taps is at least 48 px instead of 56 px, the portrait Back and Next buttons fit their words at either end instead of filling the width, and a mission's question is as wide as its text.
+- The footer shows the site version as v0.0.1.
+- Steps no longer change by swiping, which fired when a finger slipped; the buttons, section bar and contents move between them.
+- Touch is calmer for children on an iPad: double-tap never zooms on any page, holding a finger does not select text or open an image menu, the page does not rubber-band, pressed buttons shrink slightly instead of flashing grey, and tapping beside the map sheet closes it.
+- Larger text for what children read: the step total sits next to the step number, sub-assembly names, hints and mission numbers use body size or more, and 완성! is bigger. Part pictures are larger with the count on their corner, the lab's back link is a button, the map's title moved under the logo, an empty home page says the first model is on its way, and in landscape mission blocks sit in the middle.
 - Each deploy starts a fresh offline cache and removes the old one, and an open page reloads once when the new version takes over. Manuals opened before an update have to be opened again to be read offline.
 - 탱크 1호 builds its turret head (cross block and barrels) as a small sub-assembly before setting it on the pin.
 - The home page and the lab are an adventure map instead of a list: a road per series with a stop per model, a 곧 나와요 stop at the end, and dotted lines to the model another series grew from. Tapping a stop opens a sheet with the story and a start button. Stops reached to the finished screen on this device show ✓ 다 만들었어요, which a small two-tap link in the sheet can clear (the model itself stays), and the first unbuilt stop says 다음은 여기!
@@ -30,6 +36,7 @@ All notable changes to this project are recorded here. The format follows
 - The repository is now github.com/zekaizer/brick-steps, and the manuals are served at https://zekaizer.github.io/brick-steps/. The old lego-creator Pages address no longer works.
 
 ### Fixed
+- The first screen after an update no longer starts large and then shrinks: fonts stay cached across updates, and a font that is not ready when the page appears is not swapped in mid-view.
 - After an update, a manual opened before could show its old page with the new styles, which broke the layout. The site now loads pages, styles and scripts from the network first and uses the offline copy only when the network is missing or slow.
 - Tapping twice quickly on an iPad no longer zooms the page.
 - `lc new --name` with a Korean name now writes the name as readable text in `model.yaml`.

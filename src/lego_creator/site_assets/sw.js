@@ -4,7 +4,10 @@
 // on its own mixed an old page with a newer stylesheet after an update.
 // three.js (pinned version) and Google Fonts never change under the same URL: cache first.
 // The build renames the cache after its files (export.stamp_service_worker); a new worker deletes older caches.
+// Fonts and pinned three.js go to STATIC, which no deploy deletes: re-downloading fonts after every update made
+// the first screen swap fonts (and shift) on the iPad.
 const CACHE = "brick-steps";
+const STATIC = "brick-steps-static";
 const SHELL = [
   "./", "./assets/site.css", "./assets/manual.js", "./manifest.webmanifest", "./brand/brick-steps-lockup.svg", "./favicon.svg",
   // 3D step view (ADR 0002)
@@ -20,13 +23,20 @@ const SHELL = [
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {}));
+  const pinned = SHELL.filter((u) => u.includes("/vendor/"));
+  const rest = SHELL.filter((u) => !u.includes("/vendor/"));
+  event.waitUntil(Promise.all([
+    caches.open(CACHE).then((c) => c.addAll(rest)),
+    caches.open(STATIC).then(async (c) => {
+      for (const u of pinned) if (!(await c.match(u))) await c.add(u);
+    }),
+  ]).catch(() => {}));
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((names) => Promise.all(names.filter((n) => n.startsWith("brick-steps") && n !== CACHE).map((n) => caches.delete(n))))
+      .then((names) => Promise.all(names.filter((n) => n.startsWith("brick-steps") && n !== CACHE && n !== STATIC).map((n) => caches.delete(n))))
       .then(() => self.clients.claim())
   );
 });
@@ -69,8 +79,9 @@ async function networkFirst(cache, request) {
 self.addEventListener("fetch", (event) => {
   if (!cacheable(event.request)) return;
   const url = new URL(event.request.url);
-  event.respondWith(caches.open(CACHE).then((cache) =>
-    immutable(url) ? cacheFirst(cache, event.request) : networkFirst(cache, event.request)));
+  event.respondWith(immutable(url)
+    ? caches.open(STATIC).then((cache) => cacheFirst(cache, event.request))
+    : caches.open(CACHE).then((cache) => networkFirst(cache, event.request)));
 });
 
 self.addEventListener("message", (event) => {

@@ -23,7 +23,7 @@ function buildStage() {
   stage.className = "stage3d";
   stage.innerHTML =
     '<canvas aria-label="돌려 볼 수 있는 3D 조립 그림"></canvas>' +
-    '<p class="hint t-caption">손가락으로 돌려 보세요</p>' +
+    '<p class="hint t-body">손가락으로 돌려 보세요</p>' +
     '<div class="tools"><button type="button" class="replay t-button">다시 보기</button>' +
     '<button type="button" class="home t-button">처음 방향</button></div>';
   return stage;
