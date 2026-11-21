@@ -6,6 +6,7 @@ import argparse
 import csv
 import gzip
 import io
+import json
 import os
 import re
 import sys
@@ -17,6 +18,7 @@ from pathlib import Path
 import yaml
 
 from .bom import Bom, load_id_map, load_inventory, load_unknown_parts
+from .export import ExportEnv, build_manual, build_site, write_assets
 from .ldraw import Library, flatten, parse
 from .rebrickable import extract_set_inventory
 from .validate import validate
@@ -173,6 +175,32 @@ def cmd_import_inventory(root: Path, _lib: Library, args: argparse.Namespace) ->
     return 0
 
 
+def _export_env(root: Path, args: argparse.Namespace) -> ExportEnv:
+    tokens = json.loads((root / "design" / "brick-steps.tokens.json").read_text(encoding="utf-8"))
+    return ExportEnv(args.ldraw_dir, root / "custom", tokens, root / ".cache" / "leocad")
+
+
+def cmd_site(root: Path, _lib: Library, args: argparse.Namespace) -> int:
+    out = args.out or root / "site"
+    cards = build_site(root, out, _export_env(root, args), include_drafts=args.include_drafts, pdf=not args.no_pdf)
+    print(f"{out}: {len(cards)} manual(s): {', '.join(c.slug for c in cards) or 'none'}")
+    return 0
+
+
+def cmd_instructions(root: Path, _lib: Library, args: argparse.Namespace) -> int:
+    meta, mpd = _load_model(root, args.slug)
+    out = args.out or root / "models" / args.slug / "out" / "manual"
+    env = _export_env(root, args)
+    write_assets(out / "assets", env.tokens)
+    card = build_manual(
+        meta.get("name", args.slug), args.slug, mpd.read_text(encoding="utf-8"), env, out,
+        thumbs_dir=out / "parts", thumbs_href="parts/", assets_href="assets/", sw_href=None, manifest_href=None,
+        pdf=not args.no_pdf,
+    )
+    print(f"{out / 'index.html'}: {card.step_count} steps, {card.part_count} parts")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="lc", description="LEGO SPIKE Prime model tooling")
     p.add_argument("--root", type=Path, default=Path(os.environ.get("LC_ROOT", DEFAULT_ROOT)))
@@ -193,6 +221,18 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("bom", help="print flattened BOM in LDraw ids")
     s.add_argument("slug")
     s.set_defaults(func=cmd_bom)
+
+    s = sub.add_parser("instructions", help="export one model's manual (HTML + PDF) via LeoCAD")
+    s.add_argument("slug")
+    s.add_argument("--out", type=Path, help="default: models/<slug>/out/manual")
+    s.add_argument("--no-pdf", action="store_true")
+    s.set_defaults(func=cmd_instructions)
+
+    s = sub.add_parser("site", help="build the gallery + manuals site (GitHub Pages) via LeoCAD")
+    s.add_argument("--out", type=Path, help="default: <root>/site")
+    s.add_argument("--include-drafts", action="store_true", help="also publish models whose status is not ready")
+    s.add_argument("--no-pdf", action="store_true")
+    s.set_defaults(func=cmd_site)
 
     s = sub.add_parser("fetch-ldraw", help="download and extract the official LDraw library")
     s.set_defaults(func=cmd_fetch_ldraw)
