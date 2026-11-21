@@ -305,6 +305,7 @@ def test_contents_has_a_tile_for_every_card():
     for card_id in ("cover", "step-1", "cables", "step-2", "done", "mission-1", "mission-2"):
         assert f'href="#{card_id}"' in dialog, card_id
     assert 'src="img/s0-02.png"' in dialog and "닫기" in dialog
+    assert dialog.count('class="play-mark') == 2
 
 
 def test_section_bar_shows_the_brand_mark_linking_home():

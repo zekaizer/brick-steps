@@ -2,7 +2,8 @@
 *, *::before, *::after { box-sizing: border-box; }
 /* manipulation: no double-tap zoom on iPad (pinch zoom still works), so quick taps stay taps. */
 html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
-body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); }
+/* keep-all: Korean lines break between words, not inside them. */
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); word-break: keep-all; overflow-wrap: break-word; }
 img { max-width: 100%; }
 a { color: var(--azure-deep); }
 :focus-visible { outline: 3px solid var(--azure-deep); outline-offset: 2px; }
@@ -44,6 +45,12 @@ h1, p, figure { margin: 0; }
 .deck.js .main .stage3d { aspect-ratio: auto; width: 100%; height: 100%; }
 .deck.js .main img { max-height: 100%; width: auto; object-fit: contain; }
 .deck.js .mission .main { place-items: start; overflow: auto; }
+/* Portrait cover: the finished model on top at full width, its name and story right under it. */
+@media (orientation: portrait), (max-width: 899px) {
+  .deck.js .cover.on { justify-content: center; }
+  .deck.js .cover .main { flex: 0 1 auto; order: -1; }
+  .deck.js .cover .main img { width: 100%; height: auto; }
+}
 
 /* Section bar: brand mark home, the manual's parts, contents. Fixed at the top; current part outlined,
    the build part fills with azure as steps are turned. */
@@ -81,8 +88,9 @@ h1, p, figure { margin: 0; }
   padding: var(--space-2); background: var(--surface); border: 3px solid var(--surface); border-radius: var(--radius-md);
   color: var(--ink); text-decoration: none; text-align: center;
 }
-.tile img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: var(--radius-sm); background: var(--paper); }
-.tile.play { align-content: center; }
+.tile img { object-fit: contain; }
+.tile img, .tile .play-mark { width: 100%; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); background: var(--paper); }
+.tile .play-mark { display: grid; place-items: center; color: var(--azure-deep); }
 .tile[aria-current] { border-color: var(--azure-deep); }
 .tile.seen::after {
   content: "✓"; position: absolute; top: var(--space-2); right: var(--space-2);

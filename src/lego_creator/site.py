@@ -175,7 +175,8 @@ def _chapters(view: ManualView, brand: str | None) -> str:
 def _contents(view: ManualView) -> str:
     """Contents sheet: one tile per card, opened from the section bar."""
     def tile(card_id: str, label: str, image: str | None = None, cls: str = "") -> str:
-        img = f'<img src="{_e(image)}" alt="" loading="lazy">' if image else ""
+        img = (f'<img src="{_e(image)}" alt="" loading="lazy">' if image
+               else '<span class="play-mark t-title" aria-hidden="true">▶</span>')
         return f'<li><a class="tile{cls}" href="#{card_id}">{img}<span class="t-heading">{_e(label)}</span></a></li>'
 
     tiles = [tile("cover", "처음", view.hero)]
