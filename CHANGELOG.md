@@ -7,6 +7,7 @@ All notable changes to this project are recorded here. The format follows
 ## [Unreleased]
 
 ### Added
+- 탱크 4호 (draft, in the lab): tank 1 with rhombus tracks around a high front horn and a road wheel sprung by a rubber band.
 - 탱크 3호 (draft, in the lab): tank 2 with an LMS-ESP32 board on port D for driving from a Bluetooth gamepad.
 - 탱크 2호 (draft, in the lab): tank 1 with a low, wide turret on the large turntable, turned a full circle by a medium motor, fenders over the tracks and turret missions.
 - The screen stays on while a manual is open (where the browser supports it), so the iPad does not lock between steps.

@@ -1,0 +1,25 @@
+# SPIKE App word-block missions shown after the finished model (ADR 0003).
+# Block ids and arguments: src/lego_creator/missions.py
+# Port A is the left motor and port B the right one (model.mpd).
+- title: 앞뒤로 달리기
+  goal: 앞으로 갔다가 돌아와요.
+  blocks:
+  - [when_program_starts]
+  - [set_movement_motors, A, B]
+  - [move_for, forward, 2, rotations]
+  - [move_for, backward, 2, rotations]
+  try: 2를 4로 바꾸면 어떻게 될까요?
+- title: 빙글빙글 돌기
+  goal: 제자리에서 빙글 돌아요.
+  blocks:
+  - [when_program_starts]
+  - [set_movement_motors, A, B]
+  - [repeat, 4, [[move_for, clockwise, 1, rotations], [wait, 1]]]
+  try: ↻를 ↺로 바꾸면 어디로 돌까요?
+- title: 상자 한 바퀴
+  goal: 상자를 돌아서 제자리로 와요.
+  blocks:
+  - [when_program_starts]
+  - [set_movement_motors, A, B]
+  - [repeat, 4, [[move_for, forward, 3, rotations], [move_for, clockwise, 1, rotations]]]
+  try: 돌기 숫자를 바꿔서 네모를 맞춰 봐요.
