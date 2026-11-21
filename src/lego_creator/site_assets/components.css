@@ -159,7 +159,7 @@ h1, p, figure { margin: 0; }
 .block.c { padding-bottom: var(--space-6); }
 .slot { background: var(--surface); color: var(--ink); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
 .slot.menu { background: color-mix(in srgb, var(--block-bg) 45%, var(--ink)); color: var(--surface); }
-.try { background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); }
+.try { justify-self: start; background: var(--yellow); color: var(--ink); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); }
 
 /* Cable card: which device goes into which hub port */
 .cable-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
@@ -188,8 +188,9 @@ h1, p, figure { margin: 0; }
 }
 .pager-in { max-width: var(--page-max); margin: 0 auto; display: flex; gap: var(--space-4); }
 .pager button { min-height: var(--tap-min); border-radius: var(--radius-pill); border: 0; cursor: pointer; color: var(--ink); padding: 0 var(--space-6); }
-.pager .prev { flex: 1; background: var(--surface); border: 3px solid var(--azure-deep); }
-.pager .next { flex: 2; background: var(--azure); }
+.pager .prev { flex: 0 0 auto; min-width: calc(3 * var(--tap-min)); background: var(--surface); border: 3px solid var(--azure-deep); }
+/* Sized to their words, not stretched across the screen; Next stays the wider one, at the far end. */
+.pager .next { flex: 0 0 auto; min-width: calc(5 * var(--tap-min)); margin-left: auto; background: var(--azure); }
 .pager button:disabled { visibility: hidden; }
 
 /* Adventure map: home and lab. A road per series, a stop per model (site.gallery_html). */
@@ -294,6 +295,8 @@ h1, p, figure { margin: 0; }
     bottom: calc(2 * var(--space-4) + env(safe-area-inset-bottom, 0px));
     width: var(--side-panel); padding: 0; background: none;
   }
+  .pager .prev { flex: 1; min-width: 0; }
+  .pager .next { flex: 2; min-width: 0; }
   .deck.js .mission .main { place-items: center; }
   .chapters { padding-left: max(var(--space-4), env(safe-area-inset-left, 0px)); padding-right: max(var(--space-4), env(safe-area-inset-right, 0px)); }
   .tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); }

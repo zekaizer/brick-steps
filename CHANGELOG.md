@@ -21,6 +21,7 @@ All notable changes to this project are recorded here. The format follows
 - A hidden lab at `/lab/` shows models that are still drafts, marked as untested. Tap the gallery logo five times to open it.
 
 ### Changed
+- Buttons are lighter: everything a child taps is at least 48 px instead of 56 px, the portrait Back and Next buttons fit their words at either end instead of filling the width, and a mission's question is as wide as its text.
 - The footer shows the site version as v0.0.1.
 - Steps no longer change by swiping, which fired when a finger slipped; the buttons, section bar and contents move between them.
 - Touch is calmer for children on an iPad: double-tap never zooms on any page, holding a finger does not select text or open an image menu, the page does not rubber-band, pressed buttons shrink slightly instead of flashing grey, and tapping beside the map sheet closes it.
