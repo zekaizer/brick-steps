@@ -113,7 +113,7 @@ def test_download_sends_a_tool_user_agent(tmp_path, monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
     out = cli._download("https://example.invalid/x.zip", tmp_path / "x.zip")
     assert out.read_bytes() == b"payload"
-    assert seen["ua"] and seen["ua"].startswith("lego-creator/") and "Python-urllib" not in seen["ua"]
+    assert seen["ua"] and seen["ua"].startswith("brick-steps/") and "Python-urllib" not in seen["ua"]
 
 
 def test_release_check_prints_notes_or_fails(tmp_path, capsys):

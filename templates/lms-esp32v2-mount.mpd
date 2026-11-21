@@ -1,7 +1,7 @@
 0 FILE lms-esp32v2-mount.ldr
 0 LMS-ESP32 v2 on Technic 5x7 Frame
 0 Name: lms-esp32v2-mount.ldr
-0 Author: lego-creator
+0 Author: Brick Steps
 0 // Frame top face is y = -10. Board holes sit on the frame corner holes (+-40, +-60).
 0 // Axle pins: pin end in the frame, axle end through the board, bush clamps the board.
 0 // Bush grip on the 16 LDU axle stub is unverified on a real build.

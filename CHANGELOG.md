@@ -11,6 +11,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 - Headings use Lexend with Noto Sans KR instead of Jua.
+- The repository is now github.com/zekaizer/brick-steps, and the manuals are served at https://zekaizer.github.io/brick-steps/. The old lego-creator Pages address no longer works.
 
 ### Fixed
 - The GitHub Pages build no longer fails in its container: git now trusts the checkout, so the site deploys.
@@ -26,5 +27,5 @@ First beta.
 - Kid-facing Korean manuals and gallery for iPad mini: LeoCAD-rendered steps, a parts tray per step, the Brick Steps design, offline use as a home-screen app, and PDF export. Deployed to GitHub Pages.
 - Release process with changelog and version checks.
 
-[Unreleased]: https://github.com/zekaizer/lego-creator/compare/v0.0.1...HEAD
-[0.0.1]: https://github.com/zekaizer/lego-creator/releases/tag/v0.0.1
+[Unreleased]: https://github.com/zekaizer/brick-steps/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/zekaizer/brick-steps/releases/tag/v0.0.1

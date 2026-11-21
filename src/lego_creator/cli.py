@@ -32,7 +32,7 @@ LDRAW_URL = "https://library.ldraw.org/library/updates/complete.zip"
 REBRICKABLE_URL = "https://cdn.rebrickable.com/media/downloads/{}.csv.gz"
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 # library.ldraw.org rejects urllib's default agent with 403; identify the tool instead (no personal data).
-USER_AGENT = "lego-creator/0 (+https://github.com/zekaizer/lego-creator)"
+USER_AGENT = "brick-steps/0 (+https://github.com/zekaizer/brick-steps)"
 
 MPD_TEMPLATE = """\
 0 FILE main.ldr

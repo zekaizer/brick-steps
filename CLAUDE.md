@@ -1,4 +1,4 @@
-# lego-creator
+# Brick Steps (brick-steps)
 
 Original LEGO SPIKE Prime builds: LDraw models, kit-constrained BOM checks, building instructions and Pybricks programs.
 
