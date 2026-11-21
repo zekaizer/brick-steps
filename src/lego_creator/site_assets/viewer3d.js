@@ -95,6 +95,26 @@ function start(packed) {
     }
     return glow.get(material);
   }
+  const faded = new Map();
+  function fading(material) {
+    if (!faded.has(material)) {
+      const m = material.clone();
+      m.transparent = true;
+      m.opacity = 0.18;
+      m.depthWrite = false;
+      faded.set(material, m);
+    }
+    return faded.get(material);
+  }
+  // Parts that are not part of the cable step fade, so the cables stay in sight.
+  function setFaded(part, fade) {
+    for (const list of [part.meshes, part.edges]) {
+      for (const m of list) {
+        m.object.material = !fade ? m.material : Array.isArray(m.material) ? m.material.map(fading) : fading(m.material);
+      }
+    }
+  }
+
   function setFresh(part, fresh) {
     part.outline.visible = fresh;
     for (const m of part.meshes) {
@@ -130,8 +150,12 @@ function start(packed) {
         const model = root.children.find((c) => c.isGroup);
         const parts = model.children.filter((c) => c.isGroup).map((group) => {
           const meshes = [];
-          group.traverse((o) => { if (o.isMesh) meshes.push({ object: o, material: o.material }); });
-          return { group, base: group.position.clone(), meshes, outline: buildOutline(group) };
+          const edges = [];
+          group.traverse((o) => {
+            if (o.isMesh) meshes.push({ object: o, material: o.material });
+            else if (o.isLineSegments) edges.push({ object: o, material: o.material });
+          });
+          return { group, base: group.position.clone(), meshes, edges, outline: buildOutline(group) };
         });
         const ball = new THREE.Box3().setFromObject(root).getBoundingSphere(new THREE.Sphere());
         const distance = ball.radius / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.05;
@@ -151,11 +175,11 @@ function start(packed) {
   }
 
   // A round port letter that always faces the camera, like the letters printed on the hub.
-  function portLabel(text) {
+  function portLabel(text, color) {
     const c = document.createElement("canvas");
     c.width = c.height = 128;
     const g = c.getContext("2d");
-    g.fillStyle = token("--ink");
+    g.fillStyle = color;
     g.beginPath();
     g.arc(64, 64, 60, 0, Math.PI * 2);
     g.fill();
@@ -183,22 +207,31 @@ function start(packed) {
     cableGroup = null;
   }
 
-  // Cables in LDraw units, from each device to its hub port: an arc over the model that ends
-  // straight into the port. Drawn in ink, like the real black cables and the port letters, because
-  // yellow would vanish on the yellow hub. Not the real cable route.
+  // Cables in LDraw units, from each device to its hub port, each in its port's color. The line
+  // leaves the device sideways, runs up outside the hub's side and ends straight in the port with a
+  // plug, so the hub never hides it. Not the real cable route; the motor end has no plug because
+  // SPIKE motor cables do not come off.
   function drawCables(list) {
     cableGroup = new THREE.Group();
-    const material = new THREE.MeshStandardMaterial({ color: token("--ink"), roughness: 0.6 });
     for (const c of list) {
       if (!c.to) continue;
+      const color = token(`--port-${c.port.toLowerCase()}`) || token("--ink");
+      const material = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
       const from = new THREE.Vector3(...c.from), to = new THREE.Vector3(...c.to);
       const out = new THREE.Vector3(...c.out);
-      const lift = Math.min(from.y, to.y) - 40; // LDraw -Y is up
-      const mid = from.clone().lerp(to, 0.5).setY(lift);
-      const curve = new THREE.CatmullRomCurve3([from, mid, to.clone().addScaledVector(out, 30), to]);
-      cableGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 4, 8), material));
-      const label = portLabel(c.port);
-      label.position.copy(to).addScaledVector(out, 45);
+      const side = to.clone().addScaledVector(out, 50);
+      const reach = side.clone().sub(from).dot(out);  // how far to go out to clear the hub's side
+      const besideDevice = from.clone().addScaledVector(out, reach);
+      const curve = new THREE.CatmullRomCurve3(
+        [from, besideDevice, besideDevice.clone().lerp(side, 0.5), side, to.clone().addScaledVector(out, 22)],
+        false, "centripetal");
+      cableGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 4, 8), material));
+      const plug = new THREE.Mesh(new THREE.BoxGeometry(22, 14, 18), material);
+      plug.position.copy(to).addScaledVector(out, 11);
+      plug.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), out);
+      cableGroup.add(plug);
+      const label = portLabel(c.port, color);
+      label.position.copy(to).addScaledVector(out, 70);
       cableGroup.add(label);
     }
     section.root.add(cableGroup);
@@ -209,11 +242,14 @@ function start(packed) {
     drop = null;
     clearCables();
     const cables = figure.dataset.cables ? JSON.parse(figure.dataset.cables) : null;
+    const keep = cables ? new Set(JSON.parse(figure.dataset.keep || "[]")) : null;
     if (cables) drawCables(cables);
     section.parts.forEach((p, i) => {
       p.group.position.copy(p.base);
       p.group.visible = i < shown;
+      setFaded(p, false);
       setFresh(p, i < shown && i >= shown - fresh);
+      if (keep && !keep.has(i)) setFaded(p, true);
     });
     if (fresh && animate && !calm) {
       drop = { parts: section.parts.slice(shown - fresh, shown), t0: null, height: section.ball.radius * 0.9 };

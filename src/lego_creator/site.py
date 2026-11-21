@@ -40,6 +40,7 @@ class CableView:
     shown: int
     image: str  # picture when there is no 3D view
     items: list[CableItem] = field(default_factory=list)
+    keep: str = "[]"  # JSON list of reference indices the 3D view keeps solid while others fade
     lines: str = "[]"  # JSON for the 3D view: [{port, from, to | null, out | null}] as [x, y, z] in LDraw units
 
 
@@ -131,11 +132,11 @@ def _tray(items: list[TrayItem]) -> str:
 
 def _cable_card(c: CableView, hooks: str, with_3d: bool) -> str:
     items = "".join(
-        f'<li><span class="port t-heading">{_e(it.port)}</span>'
+        f'<li><span class="port port-{_e(it.port.lower())} t-heading">{_e(it.port)}</span>'
         f'<img src="{_e(it.image)}" alt="" loading="lazy"><span class="t-body">{_e(it.label)}</span></li>'
         for it in c.items
     )
-    lines = f' data-cables="{_e(c.lines)}"' if with_3d and hooks else ""
+    lines = f' data-cables="{_e(c.lines)}" data-keep="{_e(c.keep)}"' if with_3d and hooks else ""
     return (
         '<section class="card cable" id="cables">'
         '<h2 class="t-heading">케이블을 꽂아요</h2>'
