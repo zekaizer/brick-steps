@@ -6,6 +6,7 @@
 0 // Hub (engine deck) at the front on the motors, top face y -150. Turret motor output at (0, -150, 180).
 0 !LC PORT A 54675 drive_left
 0 !LC PORT B 54675 drive_right
+0 !LC PORT C 54696p01 turret
 1 322 0 -40 60 0 -1 0 1 0 0 0 0 1 32524.dat
 1 1 0 -40 0 1 0 0 0 1 0 0 0 1 6558.dat
 1 1 0 -40 120 1 0 0 0 1 0 0 0 1 6558.dat
@@ -49,44 +50,7 @@
 1 0 -148 0 280 0 0 1 0 1 0 -1 0 0 57519.dat
 1 71 -176 0 280 0 0 1 0 1 0 -1 0 0 3713.dat
 0 STEP
-1 16 0 0 0 1 0 0 0 1 0 0 0 1 turret-base.ldr
-1 0 70 -80 160 1 0 0 0 1 0 0 0 1 61332.dat
-1 0 70 -80 200 1 0 0 0 1 0 0 0 1 61332.dat
-1 0 70 -80 240 1 0 0 0 1 0 0 0 1 61332.dat
-1 0 -70 -80 160 1 0 0 0 1 0 0 0 1 61332.dat
-1 0 -70 -80 200 1 0 0 0 1 0 0 0 1 61332.dat
-1 0 -70 -80 240 1 0 0 0 1 0 0 0 1 61332.dat
-0 STEP
-1 0 20 -50 -20 0 -1 0 1 0 0 0 0 1 61332.dat
-1 0 -20 -50 -20 0 -1 0 1 0 0 0 0 1 61332.dat
-1 0 20 -50 100 0 -1 0 1 0 0 0 0 1 61332.dat
-1 0 -20 -50 100 0 -1 0 1 0 0 0 0 1 61332.dat
-1 322 0 -60 -20 0 0 1 0 1 0 -1 0 0 32524.dat
-1 322 0 -60 100 0 0 1 0 1 0 -1 0 0 32524.dat
-0 STEP
-1 0 60 -70 -20 0 -1 0 1 0 0 0 0 1 61332.dat
-1 0 -60 -70 -20 0 -1 0 1 0 0 0 0 1 61332.dat
-1 0 60 -70 100 0 -1 0 1 0 0 0 0 1 61332.dat
-1 0 -60 -70 100 0 -1 0 1 0 0 0 0 1 61332.dat
-1 14 0 -70 40 -1 0 0 0 1 0 0 0 -1 45601c01.dat
-0 STEP
-1 16 148 0 0 1 0 0 0 1 0 0 0 1 track.ldr
-1 16 -148 0 0 1 0 0 0 1 0 0 0 1 track.ldr
-0 STEP
-1 16 0 0 0 1 0 0 0 1 0 0 0 1 fender.ldr
-1 16 0 0 280 -1 0 0 0 1 0 0 0 -1 fender.ldr
-0 STEP
-1 16 0 0 0 1 0 0 0 1 0 0 0 1 turret.ldr
-0 STEP
-0 NOFILE
-0 FILE turret-base.ldr
-0 포탑 모터와 턴테이블
-0 Name: turret-base.ldr
-0 Author: Brick Steps
-0 // Medium motor with its output up at (0, -110, 240), held by two beams per side on the frames' holes at y -80.
-0 // The turntable (centre (0, -120, 240)) sits inside the hull: its top face is level with the hub's top (y -150).
-0 // Its base sits in a 5 x 7 frame, tied to the hub's rear end by two 7L beams with holes along Z.
-0 !LC PORT C 54696p01 turret
+0 // Turret motor (medium, port C): output up at (0, -110, 240), held by two beams per side on the frames' holes at y -80.
 1 322 0 -60 240 1 0 0 0 1 0 0 0 1 54696p01.dat
 1 0 30 -80 220 1 0 0 0 1 0 0 0 1 61332.dat
 1 0 30 -80 260 1 0 0 0 1 0 0 0 1 61332.dat
@@ -109,6 +73,36 @@
 1 0 -70 -80 240 1 0 0 0 1 0 0 0 1 61332.dat
 1 0 -70 -80 280 1 0 0 0 1 0 0 0 1 61332.dat
 0 STEP
+1 0 20 -50 -20 0 -1 0 1 0 0 0 0 1 61332.dat
+1 0 -20 -50 -20 0 -1 0 1 0 0 0 0 1 61332.dat
+1 0 20 -50 100 0 -1 0 1 0 0 0 0 1 61332.dat
+1 0 -20 -50 100 0 -1 0 1 0 0 0 0 1 61332.dat
+1 322 0 -60 -20 0 0 1 0 1 0 -1 0 0 32524.dat
+1 322 0 -60 100 0 0 1 0 1 0 -1 0 0 32524.dat
+0 STEP
+1 0 60 -70 -20 0 -1 0 1 0 0 0 0 1 61332.dat
+1 0 -60 -70 -20 0 -1 0 1 0 0 0 0 1 61332.dat
+1 0 60 -70 100 0 -1 0 1 0 0 0 0 1 61332.dat
+1 0 -60 -70 100 0 -1 0 1 0 0 0 0 1 61332.dat
+1 14 0 -70 40 -1 0 0 0 1 0 0 0 -1 45601c01.dat
+0 STEP
+1 16 148 0 0 1 0 0 0 1 0 0 0 1 track.ldr
+1 16 -148 0 0 1 0 0 0 1 0 0 0 1 track.ldr
+0 STEP
+1 16 0 0 0 1 0 0 0 1 0 0 0 1 fender.ldr
+1 16 0 0 280 -1 0 0 0 1 0 0 0 -1 fender.ldr
+0 STEP
+1 16 0 0 0 1 0 0 0 1 0 0 0 1 turntable.ldr
+0 STEP
+1 16 0 0 0 1 0 0 0 1 0 0 0 1 turret.ldr
+0 STEP
+0 NOFILE
+0 FILE turntable.ldr
+0 턴테이블
+0 Name: turntable.ldr
+0 Author: Brick Steps
+0 // Centre (0, -120, 240): the top face is level with the hub's top (y -150) and the motor's axle rises through the open centre.
+0 // The base sits in a 5 x 7 frame, tied to the hub's rear end by two 7L beams with holes along Z.
 1 0 40 -100 150 0 0 1 0 1 0 -1 0 0 61332.dat
 1 0 -40 -100 150 0 0 1 0 1 0 -1 0 0 61332.dat
 1 322 0 -100 160 0 0 1 1 0 0 0 1 0 32524.dat
