@@ -1,0 +1,24 @@
+# SPIKE App word-block missions shown after the finished model (ADR 0003).
+# Block ids and arguments: src/lego_creator/missions.py
+# Port A is the left motor, B the right one and C the turret motor (model.mpd).
+- title: 포탑 한 바퀴
+  goal: 포탑이 제자리에서 한 바퀴 돌아요.
+  blocks:
+  - [when_program_starts]
+  - [run_motor_for, C, clockwise, 1, rotations]
+  try: 1을 0.5로 바꾸면 포탑은 어디를 볼까요?
+- title: 뒤를 조심해
+  goal: 앞으로 가다가 포탑을 뒤로 돌려요.
+  blocks:
+  - [when_program_starts]
+  - [set_movement_motors, A, B]
+  - [move_for, forward, 2, rotations]
+  - [run_motor_for, C, clockwise, 180, degrees]
+  - [move_for, backward, 2, rotations]
+  try: 180을 90으로 바꾸면 포탑은 어느 쪽을 볼까요?
+- title: 사방 살피기
+  goal: 포탑이 네 방향을 차례로 살펴요.
+  blocks:
+  - [when_program_starts]
+  - [repeat, 4, [[run_motor_for, C, clockwise, 90, degrees], [wait, 1]]]
+  try: 4와 90을 바꿔서 여덟 방향을 살펴 봐요.

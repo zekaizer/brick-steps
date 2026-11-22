@@ -1,0 +1,17 @@
+name: 탱크 2호
+series: tank
+number: 2
+based_on: tank-1
+kits:
+  45678-1: 2
+  45681-1: 1
+  tank-tracks: 1
+status: draft
+version: 1
+created: '2026-11-22'
+revisions:
+- version: 1
+  date: '2026-11-22'
+  note: First draft
+story:
+  intro: 탱크 2호는 포탑이 빙글빙글 한 바퀴 돌아요.

@@ -45,3 +45,8 @@ def test_no_plan_without_ports_and_no_hub_point_without_a_hub():
     assert cable_plan(parse("0 FILE main.ldr\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n")) is None
     plan = cable_plan(parse("0 FILE main.ldr\n0 !LC PORT A 54675 m\n1 322 0 0 0 1 0 0 0 1 0 0 0 1 54675.dat\n"))
     assert plan.cables[0].hub_point is None and plan.after_step == 0 and plan.cables[0].label == "큰 모터"
+
+
+def test_a_medium_motor_cable_leaves_its_rear_end():
+    plan = cable_plan(parse("0 FILE main.ldr\n0 !LC PORT C 54696p01 t\n1 322 0 -60 240 1 0 0 0 1 0 0 0 1 54696p01.dat\n"))
+    assert plan.cables[0].device_point == (0, -60, 390) and plan.cables[0].label == "중간 모터"
