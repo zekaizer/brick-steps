@@ -103,6 +103,40 @@ def insertions(doc: Document, shapes: Shapes) -> dict[str, tuple[Insertion, ...]
     return out
 
 
+def check_insertions(doc: Document, shapes: Shapes) -> list[Issue]:
+    """`0 !LC INSERT` lines. Errors: malformed, dangling (no reference follows in its step), a second one for the
+    same reference. Warnings: the path from the given side runs into an earlier part (rays, so a place to look,
+    like turn-interference), or the 3D view brings the part in from that side anyway.
+
+    Plans only the steps that hold an override.
+    """
+    issues: list[Issue] = []
+    for sub in doc.models.values():
+        overrides, problems = _overrides(sub)
+        issues += problems
+        if not overrides:
+            continue
+        build = _Build(doc, sub, shapes)
+        sides = {i: o.side for i, o in overrides.items()}
+        for step in sorted({sub.refs[i].step for i in overrides}):
+            planned = build.plan_step(step, sides)
+            inferred = build.plan_step(step, {})
+            for i, o in overrides.items():
+                ref = sub.refs[i]
+                if ref.step != step:
+                    continue
+                a = planned[i]
+                if a.blocked_by is not None:
+                    why = a.note or f"runs into {build.label(a.blocked_by)} within {a.travel:.0f} LDU"
+                    issues.append(Issue("warning", "insert-blocked",
+                                        f"{sub.name} line {ref.line} ({part_id(ref.name)}): from {o.side.name} {why}"))
+                if inferred[i].side == o.side:
+                    issues.append(Issue("warning", "insert-unneeded", f"{sub.name} line {o.line}: the 3D view already "
+                                                                      f"brings {part_id(ref.name)} (line {ref.line}) "
+                                                                      f"in from {o.side.name}"))
+    return issues
+
+
 def moves(arrivals: Sequence[Insertion]) -> list[dict]:
     """What the 3D view needs for the new references of one step, in the same order.
 

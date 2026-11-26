@@ -114,3 +114,19 @@ def test_turn_and_ground_checks_are_included(tmp_path):
     assert codes(issues, "warning") == ["ground-clearance", "ground-clearance", "turn-interference", "turn-interference"]
     bad = parse("0 !LC TURN 0 -1 0 arm\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 cube.dat\n")
     assert codes(validate(bad, lib, None, {})) == ["turn-malformed"]
+
+
+def insert_errors(text):
+    return [(i.code, i.message) for i in validate(parse(text), LIB, None, {}) if i.level == "error"]
+
+
+def test_insert_lines_that_are_malformed_dangling_or_doubled_are_errors():
+    ref = "1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n"
+    assert insert_errors(f"0 FILE a.ldr\n0 !LC INSERT +X\n{ref}") == [
+        ("insert-malformed", "a.ldr line 2: expected '0 !LC INSERT FROM <+X|-X|+Y|-Y|+Z|-Z>', got '0 !LC INSERT +X'")]
+    assert [c for c, _ in insert_errors(f"0 !LC INSERT FROM +W\n{ref}")] == ["insert-malformed"]
+    assert insert_errors(f"0 FILE a.ldr\n{ref}0 !LC INSERT FROM +X\n0 STEP\n{ref}") == [
+        ("insert-dangling", "a.ldr line 3: no reference follows in the same step")]
+    assert [c for c, _ in insert_errors(f"{ref}0 !LC INSERT FROM +X\n")] == ["insert-dangling"]
+    assert insert_errors(f"0 FILE a.ldr\n0 !LC INSERT FROM +X\n0 // why\n0 !LC INSERT FROM -X\n{ref}") == [
+        ("insert-twice", "a.ldr line 4: a second 0 !LC INSERT for the reference on line 5")]

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from lego_creator.geometry import Shapes
-from lego_creator.insertion import FROM_ABOVE, Side, insertions, moves
+from lego_creator.insertion import FROM_ABOVE, Side, check_insertions, insertions, moves
 from lego_creator.ldraw import parse
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -117,3 +117,30 @@ def test_every_reference_of_a_real_model_arrives_once(slug):
         for step in {ref.step for ref in sub.refs}:
             orders = [result[name][i].order for i, ref in enumerate(sub.refs) if ref.step == step]
             assert sorted(orders) == list(range(len(orders))), (name, step)
+
+
+def warnings(text):
+    return [(i.level, i.code, i.message) for i in check_insertions(parse(text), SHAPES)]
+
+
+def test_insert_line_whose_path_runs_into_a_part_is_a_warning():
+    text = model([f"0 0 24 0 {I} 3001.dat"], ["0 !LC INSERT FROM +Y", f"0 0 0 0 {I} 3001.dat"])
+    assert warnings(text) == [("warning", "insert-blocked",
+                               "main.ldr line 6 (3001): from +Y runs into 3001 (line 3) within 48 LDU")]
+
+
+def test_insert_line_that_says_what_the_view_does_anyway_is_a_warning():
+    text = model([f"0 0 24 0 {I} 3001.dat"], ["0 !LC INSERT FROM -Y", f"0 0 0 0 {I} 3001.dat"])
+    assert warnings(text) == [("warning", "insert-unneeded",
+                               "main.ldr line 5: the 3D view already brings 3001 (line 6) in from -Y")]
+
+
+def test_insert_line_with_a_clear_path_of_its_own_is_quiet():
+    text = model([f"0 0 24 0 {I} 3001.dat"], ["0 !LC INSERT FROM -Z", f"0 0 0 0 {I} 3001.dat"])
+    assert warnings(text) == []
+
+
+def test_insert_line_across_a_pin_in_its_hole_is_a_warning():
+    text = model([f"0 0 0 0 {HOLES_X} 32316.dat"], ["0 !LC INSERT FROM -Y", f"0 10 0 0 {I} 61332.dat"])
+    assert warnings(text) == [("warning", "insert-blocked",
+                               "main.ldr line 6 (61332): from -Y held along X by 32316 (line 3)")]

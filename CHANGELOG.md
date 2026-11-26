@@ -7,6 +7,7 @@ All notable changes to this project are recorded here. The format follows
 ## [Unreleased]
 
 ### Added
+- `0 !LC INSERT FROM <side>` above a reference in a model sets the side its part comes in from. `lc validate` checks these lines and warns when the path from that side runs into an earlier part or when the side is the one the part would take anyway.
 - `lc site --render-cache DIR` reuses step pictures and part thumbnails from an earlier build when nothing they depend on changed (the model, the LDraw files it uses, the colours, LeoCAD), and the Pages build keeps them between runs.
 - The cable card also lists a motor or sensor built as its own sub-assembly beside the hub, and lists cables by port letter.
 - `lc bom <slug> --left` lists what the model's kits still hold once the model is built, by kit part and colour.
