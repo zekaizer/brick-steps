@@ -1,0 +1,18 @@
+name: 비행기 1호
+series: plane
+number: 1
+kits:
+  45678-1: 2
+  45681-1: 1
+status: ready
+version: 2
+created: '2026-11-26'
+revisions:
+- version: 1
+  date: '2026-11-26'
+  note: First draft
+- version: 2
+  date: '2026-11-27'
+  note: Put the long pins into the hub before the fan motor, and split the deck step
+story:
+  intro: 비행기 1호는 기관포와 엔진 팬이 빙글빙글 돌아요.

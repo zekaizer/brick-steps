@@ -7,11 +7,14 @@ kits:
   45681-1: 1
   tank-tracks: 1
 status: draft
-version: 1
+version: 2
 created: '2026-11-22'
 revisions:
 - version: 1
   date: '2026-11-22'
   note: First draft
+- version: 2
+  date: '2026-11-27'
+  note: Fix two pins sharing a hole in each fender and the turret axle meeting a pin
 story:
   intro: 탱크 2호는 포탑이 빙글빙글 한 바퀴 돌아요.

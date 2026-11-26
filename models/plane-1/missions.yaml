@@ -1,0 +1,22 @@
+# SPIKE App word-block missions shown after the finished model (ADR 0003).
+# Block ids and arguments: src/lego_creator/missions.py
+# Port A is the gun motor in the nose and port B the fan motor in the tail (model.mpd).
+- title: 기관포 돌리기
+  goal: 기관포를 빙글빙글 돌려요.
+  blocks:
+  - [when_program_starts]
+  - [run_motor_for, A, clockwise, 3, rotations]
+  try: 3을 10으로 바꾸면 어떻게 될까요?
+- title: 엔진 켜기
+  goal: 엔진 팬 두 개를 함께 돌려요.
+  blocks:
+  - [when_program_starts]
+  - [run_motor_for, B, clockwise, 5, seconds]
+  try: ↻를 ↺로 바꾸면 팬이 어느 쪽으로 돌까요?
+- title: 출격 준비
+  goal: 엔진을 켜고 기관포를 세 번 쏴요.
+  blocks:
+  - [when_program_starts]
+  - [run_motor_for, B, clockwise, 3, seconds]
+  - [repeat, 3, [[run_motor_for, A, clockwise, 1, rotations], [wait, 1]]]
+  try: 반복 숫자를 바꿔서 더 많이 쏴 봐요.

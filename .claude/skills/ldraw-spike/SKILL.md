@@ -62,6 +62,7 @@ uv run python scripts/ldraw_measure.py bbox 39794 54675
 uv run python scripts/ldraw_measure.py holes 54675
 uv run python scripts/ldraw_measure.py slice 54675 Z 60 150
 uv run python scripts/ldraw_measure.py overlap <slug>
+uv run python scripts/ldraw_measure.py pins <slug>
 ```
 
 Hub, motor, frame and track holes are in [references/spike-parts.md](references/spike-parts.md).

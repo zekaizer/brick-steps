@@ -120,6 +120,9 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
     doc = parse(mpd_text, default_name=f"{slug}.ldr")
     sections = plan(doc)
     out_dir.mkdir(parents=True, exist_ok=True)
+    # Step pictures are collected by file name, so pictures left by an earlier build would be taken as steps.
+    if (out_dir / "img").exists():
+        shutil.rmtree(out_dir / "img")
     build = out_dir / "build.mpd"
     build.write_text(build_mpd(mpd_text, doc, env.library, env.custom), encoding="utf-8")
 

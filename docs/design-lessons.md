@@ -25,6 +25,11 @@ What building models has taught us, so the next model does not relearn it. The `
 - **The hub's height sets the hull roof.** On its motors the hub's top is at y -150, so anything that turns above it starts there. Sink a turntable into the hull with its top face level with the hub's top, rather than stacking it on top. (tank-2, 2026-11-22, unverified)
 - **Draw motors without their cable when the cable is not the point.** The cabled part has a rigid coil that sticks 160 LDU out of the model. (tank-1, 2026-11-22)
 
+- **A motor's output is across its body, so decide early where the body goes.** To turn an axle that lies along the fuselage, stand the motor on end, or lay it flat and turn the drive with a pair of bevel gears. Plane 1 lays both flat: the gun motor output down, the fan motor output up, which keeps them below the cockpit and the engine pods. (plane-1, 2026-11-26, unverified)
+- **Plan around the hub's buttons.** The centre button is at the hub's front end and the Bluetooth button at its rear right corner (positions in the `ldraw-spike` tables). Plane 1's canopy stops in front of the hub, and its fan intakes sit behind the hub's rear edge, not above the Bluetooth button. (plane-1, 2026-11-26)
+- **Estimate the balance before placing the wheels.** Add up rough weights (hub 155 g, large motor 55 g, medium motor 38 g, beams about 0.23 g a hole) along the length. Plane 1's main wheels were first 35 LDU behind the estimated centre of gravity and were moved to 55. (plane-1, 2026-11-26, unverified)
+- **Leave room behind a motor for its cable.** The cable leaves the rear end straight back. Plane 1's gun motor had 20 LDU to the hub until it was raised above the hub's top. (plane-1, 2026-11-26, unverified)
+
 ## Tracks
 
 - **Choose the wheelbase from the link pitch, then find holes for it.** A loop is 2 × wheelbase + 10 links around the sprockets, so it closes exactly only when the wheelbase is a multiple of 15 LDU. Holes on the 20 LDU grid give that only at multiples of 60. The tank's 280 LDU needs 28.8 links and gets 29, slightly loose. (tank-1, 2026-11-22, unverified)
@@ -41,6 +46,31 @@ What building models has taught us, so the next model does not relearn it. The `
 - **A turntable is both bearing and drive.** Its open centre lets a motor below drive the turret straight through an axle and a 28-tooth gear, with no gear mesh to guess. (tank-2, 2026-11-22, unverified)
 - **Expect turn warnings around round parts.** The box of a turntable's disc sweeps corners the disc never reaches; compare the radius with the distance by hand and write the result in `spec.md`. (tank-2, 2026-11-22)
 
+## Pins and holes
+
+- **Run `ldraw_measure.py pins` after every change.** Two pins drawn in one hole look fine in a picture, and `overlap` skips connectors. Plane 1 had 16 such pairs before the check existed. (plane-1, 2026-11-26)
+- **Hold every gear from both sides.** A bush, a half bush, a beam face, an axle connector or an axle with a stop. On a vertical axle the stop goes under the gear, or it slides off. (plane-1, 2026-11-27, unverified)
+- **Check the holes a turned copy lands on.** A sub-assembly turned 180° for the other side puts its pins at mirrored positions; tank 2's left fender met the hull's own pin in one frame hole. (tank-2, 2026-11-27)
+- **Make sure an axle reaches into each bearing, not just to its face.** Plane 1's gun axle was 10 LDU short of entering its rear T-beam; two axles joined by an axle connector reach it. Neither `pins` nor `overlap` catches this. (plane-1, 2026-11-27)
+- **Join a stack of beams with one long pin through all of them, or with pins at different holes for each joint.** Two short pins at the same hole meet inside the middle beam. The same holds for three rails side by side: one 3L pin through all three. (plane-1, 2026-11-26)
+
+## Frames and long bodies
+
+- **Join frames end to end with posts into the hub, not with pins alone.** Pins through two abutting frame walls all sit at one height and act as a hinge. A post pinned to the hub's end face 60 LDU higher gives the joint a lever arm. (plane-1, 2026-11-26, unverified)
+- **Find the hole grid two parts share before choosing where a motor sits.** The 11 x 7 frame's side holes are 40 apart and a motor's are 40 and 120 apart, so only one position along the frame lines up. (plane-1, 2026-11-26)
+- **A beam that crosses another shares one hole with it.** Give a wing or a strut a second pin somewhere, with a T-beam, a bent beam or a rib, or it swings. (plane-1, 2026-11-26, unverified)
+- **A frame's box includes its open centre.** `overlap` lists everything standing inside the opening; that is expected. (plane-1, 2026-11-26)
+
+## Looks
+
+- **Skin the frame before showing a draft.** Plane 1's first drawing was 131 parts of frames and stilts and read as a skeleton. (plane-1, 2026-11-26)
+- **Give a wing a round leading edge, a taper and a different tip.** A flat perforated frame, and a deck of equal beams, both read as a board. Plane 1's wings became wings with an 11 x 3 curved panel laid lengthwise as the leading edge, a trailing edge stepping forward towards the tip and azure tips on a black wing. (plane-1, 2026-11-26)
+- **Choose beam lengths by colour.** Each beam length comes in one colour in these kits (11L magenta, 7L and 13L azure, 9L and 15L black). Pick the lengths that give the colours you want, then place the ribs that hold them; plane 1's first wing had magenta stripes wherever an 11L was needed. (plane-1, 2026-11-26)
+- **Fill an open frame with a part that fits its opening.** A 5 x 3 H-beam fills the 5 x 7 frame's opening and turns it into a solid fin. (plane-1, 2026-11-26, unverified)
+- **Use a real photo as the checklist.** Comparing renders from several angles with photos of the real aircraft showed what was missing: canopy, intakes, fins at the tailplane tips, stores, an offset nose wheel. (plane-1, 2026-11-26)
+- **Hang panels on holes a motor already has.** The curved 11 x 3 panel's two rails are one beam apart sideways and 40 apart in height, the same as a motor's side holes, so it fits a motor's flank with no adapter. (plane-1, 2026-11-26, unverified)
+- **Carry a wide wing through the body.** A 19 x 11 frame under the fuselage, pinned through the middle frame into the hub, takes both wings' root rows and spreads the bending over many pins. (plane-1, 2026-11-26, unverified)
+
 ## Kits
 
 - **Count electronics per set before choosing kits.** One 45678 has a single large motor; a two-motor drive needs two sets or the 45681 expansion. (tank-1, 2026-11-22)
@@ -48,4 +78,5 @@ What building models has taught us, so the next model does not relearn it. The `
 
 ## Instructions for children
 
+- **Give a large repeated surface its own sub-assembly and at most ten parts a step.** Plane 1's wing deck was one step of 39 parts; as a sub-assembly per side, a row or two per step, it is 12 readable steps. (plane-1, 2026-11-26)
 - **Build mirrored halves in the same step.** Left and right frames, sprockets and tracks go on together, so the child sees the symmetry and the step count stays low. (tank-1, 2026-11-22, unverified)

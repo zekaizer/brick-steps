@@ -13,3 +13,4 @@ CLAUDE.local.md
 *.pem
 *.key
 .claude/settings.local.json
+/.verify/

@@ -7,6 +7,8 @@ All notable changes to this project are recorded here. The format follows
 ## [Unreleased]
 
 ### Added
+- 비행기 1호 is published in the gallery.
+- 비행기 1호: an A-10 at about 1:42, 42 cm across, with a raised canopy, a gun under the nose turned through bevel gears, two engine pods whose intakes spin on one motor, tapered wings with a rounded leading edge, four missile racks and twin fins.
 - 탱크 1호 is published in the gallery.
 - 탱크 4호 (draft, in the lab): tank 1 with rhombus tracks around a high front horn and a road wheel sprung by a rubber band.
 - 탱크 3호 (draft, in the lab): tank 2 with an LMS-ESP32 board on port D for driving from a Bluetooth gamepad.
@@ -40,6 +42,8 @@ All notable changes to this project are recorded here. The format follows
 - The repository is now github.com/zekaizer/brick-steps, and the manuals are served at https://zekaizer.github.io/brick-steps/. The old lego-creator Pages address no longer works.
 
 ### Fixed
+- Rebuilding a manual no longer picks up step pictures left from an earlier build, which could show an old picture as a sub-assembly's result or as the cover.
+- 탱크 2호 and 탱크 3호 (lab): the fenders and the turret axle no longer show two pins, or a pin and an axle, in one hole; the turret axle now sits 20 LDU deep in the motor instead of 10.
 - The first screen after an update no longer starts large and then shrinks: fonts stay cached across updates, and a font that is not ready when the page appears is not swapped in mid-view.
 - After an update, a manual opened before could show its old page with the new styles, which broke the layout. The site now loads pages, styles and scripts from the network first and uses the offline copy only when the network is missing or slow.
 - Tapping twice quickly on an iPad no longer zooms the page.

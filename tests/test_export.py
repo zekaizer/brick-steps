@@ -84,6 +84,25 @@ def test_build_site_end_to_end(tmp_path):
         assert f"0 FILE {name}\n" in packed, name
 
 
+def test_rebuilt_manual_drops_pictures_from_an_earlier_build(tmp_path):
+    from lego_creator.export import build_manual
+
+    tokens = json.loads((ROOT / "design" / "brick-steps.tokens.json").read_text(encoding="utf-8"))
+    env = ExportEnv(ROOT / "ldraw", ROOT / "custom", tokens, tmp_path / "cfg")
+    out = tmp_path / "manual"
+    (out / "img").mkdir(parents=True)
+    (out / "img" / "s0-09.png").write_bytes(b"stale")  # a ninth step the model no longer has
+    (out / "img" / "s7-01.png").write_bytes(b"stale")  # a section the model no longer has
+    model = ("0 FILE main.ldr\n0 Two Bricks\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n0 STEP\n"
+             "1 4 0 -24 0 1 0 0 0 1 0 0 0 1 3001.dat\n0 STEP\n0 NOFILE\n")
+
+    build_manual("두 블록", "bricks", model, env, out, thumbs_dir=tmp_path / "parts", thumbs_href="../parts/",
+                 assets_href="../assets/", sw_href=None, manifest_href=None, pdf=False)
+
+    assert sorted(p.name for p in (out / "img").iterdir()) == ["hero.png", "s0-01.png", "s0-02.png"]
+    assert (out / "img" / "hero.png").read_bytes() == (out / "img" / "s0-02.png").read_bytes()
+
+
 def test_service_worker_cache_is_named_after_the_build(tmp_path):
     import re
 
