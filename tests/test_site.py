@@ -147,8 +147,9 @@ def test_manual_html_tells_the_3d_view_what_each_step_shows():
     assert 'data-sub="wheels.ldr" data-shown="2" data-fresh="2"' in html
     assert 'data-sub="main.ldr" data-shown="3" data-fresh="1"' in html
     assert 'data-sub="main.ldr" data-shown="3" data-fresh="0"' in html  # finished model on the done card
-    assert '"three": "../assets/vendor/three/three.module.min.js"' in html
-    assert '"three/addons/": "../assets/vendor/three/addons/"' in html
+    # The version is in the path: the service worker keeps vendored files forever under their URL.
+    assert '"three": "../assets/vendor/three-0.187.0/three.module.js"' in html
+    assert '"three/addons/": "../assets/vendor/three-0.187.0/addons/"' in html
     assert '<script type="module" src="../assets/viewer3d.js"></script>' in html
     assert html.index('type="importmap"') < html.index("viewer3d.js")
     assert "LDraw.org Parts Library" in html

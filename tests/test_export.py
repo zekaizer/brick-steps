@@ -57,8 +57,8 @@ def test_build_site_end_to_end(tmp_path):
     for rel in ("index.html", "sw.js", "manifest.webmanifest", "assets/site.css", "assets/manual.js",
                 "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "favicon.svg",
                 "favicon-32.png", "brand/brick-steps-lockup.svg", "brand/brick-steps-mark.svg", "bot/index.html", "bot/manual.pdf", "bot/img/hero.png",
-                "bot/model3d.txt", "assets/viewer3d.js", "assets/vendor/three/three.module.min.js",
-                "assets/vendor/three/addons/loaders/LDrawLoader.js"):
+                "bot/model3d.txt", "assets/viewer3d.js", "assets/vendor/three-0.187.0/three.module.js",
+                "assets/vendor/three-0.187.0/three.core.js", "assets/vendor/three-0.187.0/addons/loaders/LDrawLoader.js"):
         assert (out / rel).is_file(), rel
     assert not (out / "wip").exists() and "wip" not in (out / "index.html").read_text(encoding="utf-8")
     assert 'href="wip/"' in (out / "lab" / "index.html").read_text(encoding="utf-8")
@@ -71,6 +71,9 @@ def test_build_site_end_to_end(tmp_path):
     for src in __import__("re").findall(r'src="([^"]+\.png)"', page):
         assert (out / "bot" / src).resolve().is_file(), src
     assert (out / "bot" / "manual.pdf").read_bytes()[:4] == b"%PDF"
+    sw = (out / "sw.js").read_text(encoding="utf-8")
+    for rel in __import__("re").findall(r'"\./(assets/[^"]+)"', sw):  # the offline shell must exist
+        assert (out / rel).is_file(), rel
     assert "Brick Steps v" + __import__("importlib.metadata").metadata.version("lego-creator") in (out / "index.html").read_text(encoding="utf-8")
     assert 'href="../" aria-label="처음으로"' in page and 'href="../" aria-label="처음으로"' in draft
     for html, base in ((page, out / "bot"), (draft, out / "lab" / "wip")):

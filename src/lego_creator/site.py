@@ -7,6 +7,10 @@ import re
 from dataclasses import dataclass, field
 from html import escape
 
+# Vendored three.js (ADR 0002). The version is in the path because the service worker keeps these files
+# under their URL for good; sw.js lists the same folder.
+THREE_DIR = "vendor/three-0.187.0/"
+
 
 @dataclass(frozen=True)
 class TrayItem:
@@ -279,8 +283,8 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
             f'<script src="{_e(assets)}manual.js" defer></script>',
         ]
     if with_3d:
-        three = f"{assets}vendor/three/"
-        imports = {"three": f"{three}three.module.min.js", "three/addons/": f"{three}addons/"}
+        three = f"{assets}{THREE_DIR}"
+        imports = {"three": f"{three}three.module.js", "three/addons/": f"{three}addons/"}
         out += [
             f'<script type="importmap">{json.dumps({"imports": imports})}</script>',
             f'<script type="module" src="{_e(assets)}viewer3d.js"></script>',

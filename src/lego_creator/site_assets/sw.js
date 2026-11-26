@@ -12,13 +12,14 @@ const SHELL = [
   "./", "./assets/site.css", "./assets/manual.js", "./manifest.webmanifest", "./brand/brick-steps-lockup.svg", "./favicon.svg",
   // 3D step view (ADR 0002)
   "./assets/viewer3d.js",
-  "./assets/vendor/three/three.module.min.js",
-  "./assets/vendor/three/addons/controls/OrbitControls.js",
-  "./assets/vendor/three/addons/loaders/LDrawLoader.js",
-  "./assets/vendor/three/addons/materials/LDrawConditionalLineMaterial.js",
-  "./assets/vendor/three/addons/lines/LineSegments2.js",
-  "./assets/vendor/three/addons/lines/LineSegmentsGeometry.js",
-  "./assets/vendor/three/addons/lines/LineMaterial.js",
+  "./assets/vendor/three-0.187.0/three.module.js",
+  "./assets/vendor/three-0.187.0/three.core.js",
+  "./assets/vendor/three-0.187.0/addons/controls/OrbitControls.js",
+  "./assets/vendor/three-0.187.0/addons/loaders/LDrawLoader.js",
+  "./assets/vendor/three-0.187.0/addons/materials/LDrawConditionalLineMaterial.js",
+  "./assets/vendor/three-0.187.0/addons/lines/LineSegments2.js",
+  "./assets/vendor/three-0.187.0/addons/lines/LineSegmentsGeometry.js",
+  "./assets/vendor/three-0.187.0/addons/lines/LineMaterial.js",
 ];
 
 self.addEventListener("install", (event) => {
