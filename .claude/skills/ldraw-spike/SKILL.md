@@ -38,6 +38,16 @@ Copy matrices from this table instead of composing them by hand. Every entry has
 | Rz+90 | `0 -1 0 1 0 0 0 0 1` | +Y (down) | -X | +Z |
 | Rz-90 | `0 1 0 -1 0 0 0 0 1` | -Y (up) | +X | +Z |
 
+Parts turned onto a side as well as around need two turns at once. These were checked by script (determinant 1, axes as listed) and placed in plane-1:
+
+| name | a b c d e f g h i | local X → | local Y → | local Z → | use |
+|---|---|---|---|---|---|
+| upright beam | `0 1 0 0 0 -1 -1 0 0` | -Z | +X | -Y (up) | a beam standing up, holes along X (32523 in plane-1's gun mount) |
+| beam along X, holes along Z | `0 0 1 1 0 0 0 1 0` | +Y (down) | +Z | +X | a beam lying across the model with holes front to back (wing spars 41239, 32278) |
+| frame on edge | `0 1 0 0 0 1 1 0 0` | +Z | +X | +Y (down) | a frame or Technic plate (64179, 14720, 15458) standing as a side wall: thickness along X, local Z vertical |
+| T or L beam on edge | `0 -1 0 0 0 -1 1 0 0` | +Z | -X | -Y (up) | 60484 or 32526 in the side (YZ) plane, holes along X, local Z arm pointing up |
+| curved panel as a leading edge | `0 0 -1 -1 0 0 0 1 0` | -Y (up) | +Z | -X | 11954 lengthwise along X, rounded edge forward and down (plane-1's wings) |
+
 ## Part frames (measured bounding boxes)
 
 | part | origin and axes |
