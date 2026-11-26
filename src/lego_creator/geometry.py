@@ -67,6 +67,9 @@ class Shapes:
         self.points = functools.lru_cache(maxsize=None)(self._points)
         self.triangles = functools.lru_cache(maxsize=None)(self._triangles)
         self.holes = functools.lru_cache(maxsize=None)(self._holes)
+        self.box = functools.lru_cache(maxsize=None)(self._box)
+        self.material = functools.lru_cache(maxsize=None)(self._material)
+        self._faces = functools.lru_cache(maxsize=None)(self._faces_along)
 
     def find(self, name: str) -> Path | None:
         name = name.strip().replace("\\", "/").lower()
@@ -113,6 +116,29 @@ class Shapes:
                 out += [(a, b, c), (a, c, d)]
         return tuple(out)
 
+    def _box(self, name: str) -> Box:
+        """In the part's own frame; raises ValueError for a part without geometry."""
+        return box(self.points(name))
+
+    def _material(self, name: str, c: int, lj: float, lk: float, radius: float) -> tuple[tuple[float, float], ...]:
+        """Spans along local axis c covered by faces that come within `radius` of the local line through (lj, lk),
+        the other two local coordinates in ascending axis order."""
+        r2 = radius * radius
+        spans = sorted((lo, hi) for lo, hi, j0, j1, k0, k1, corners in self._faces(name, c)
+                       if j0 - radius <= lj <= j1 + radius and k0 - radius <= lk <= k1 + radius
+                       and any((vj - lj) ** 2 + (vk - lk) ** 2 <= r2 for vj, vk in corners))
+        return tuple(_merge(spans))
+
+    def _faces_along(self, name: str, c: int) -> tuple:
+        """Per triangle: its span along local axis c, its bounds on the other two axes, and its corners there."""
+        j, k = [x for x in range(3) if x != c]
+        out = []
+        for tri in self.triangles(name):
+            js, ks = [v[j] for v in tri], [v[k] for v in tri]
+            out.append((min(v[c] for v in tri), max(v[c] for v in tri), min(js), max(js), min(ks), max(ks),
+                        tuple(zip(js, ks))))
+        return tuple(out)
+
     def _holes(self, name: str) -> tuple[tuple[tuple[Vec, str], tuple[str, ...]], ...]:
         """((position, axis letter), primitive names) of every hole in a part, in its own frame."""
         found: dict[tuple, set[str]] = {}
@@ -149,9 +175,20 @@ class Solid:
     def points(self) -> list[Vec]:
         return [apply(self.rot, self.pos, p) for p in self.shapes.points(self.name)]
 
+    @property
+    def shaped(self) -> bool:
+        return bool(self.shapes.points(self.name))
+
     @functools.cached_property
     def box(self) -> Box:
-        return box(self.points) if self.points else ([0.0] * 3, [0.0] * 3)
+        if not self.shaped:
+            return ([0.0] * 3, [0.0] * 3)
+        if all(sorted(abs(x) for x in row) == [0.0, 0.0, 1.0] for row in self.rot):
+            # Turned only by quarter turns: the corners of the part's own box give the same box as every point.
+            lo, hi = self.shapes.box(self.name)
+            return box([apply(self.rot, self.pos, (x, y, z)) for x in (lo[0], hi[0]) for y in (lo[1], hi[1])
+                        for z in (lo[2], hi[2])])
+        return box(self.points)
 
     @functools.cached_property
     def triangles(self) -> list[Tri]:
@@ -165,22 +202,45 @@ class Solid:
 
     def ends(self, i: int) -> tuple[float, float]:
         """Extent along frame axis i of a pin or axle."""
-        lo, hi = box(self.shapes.points(self.name))
+        lo, hi = self.shapes.box(self.name)
         return tuple(sorted(self.pos[i] + self.rot[i][0] * x for x in (lo[0], hi[0])))  # type: ignore[return-value]
 
     def material(self, i: int, pj: float, pk: float, radius: float) -> list[tuple[float, float]]:
-        """Spans along axis i covered by faces that come within `radius` of the line through (pj, pk)."""
+        """Spans along axis i covered by faces that come within `radius` of the line through (pj, pk), ascending."""
         j, k = [x for x in range(3) if x != i]
-        r2 = radius * radius
-        spans = sorted((min(v[i] for v in tri), max(v[i] for v in tri)) for tri in self.triangles
-                       if any((v[j] - pj) ** 2 + (v[k] - pk) ** 2 <= r2 for v in tri))
-        out: list[list[float]] = []
-        for lo, hi in spans:
-            if out and lo <= out[-1][1] + 1:
-                out[-1][1] = max(out[-1][1], hi)
-            else:
-                out.append([lo, hi])
-        return [(lo, hi) for lo, hi in out]
+        c = next((c for c in range(3) if abs(self.rot[i][c]) == 1.0), None)
+        if c is None:
+            return _spans(self.triangles, i, j, k, pj, pk, radius)
+        # A local axis lies along i: the part's own spans on the same local line serve every copy of the part.
+        line = [0.0, 0.0, 0.0]
+        line[j], line[k] = pj, pk
+        d = [line[r] - self.pos[r] for r in range(3)]
+        local = [sum(self.rot[r][cc] * d[r] for r in range(3)) for cc in range(3)]
+        lj, lk = [local[x] for x in range(3) if x != c]
+        sign = self.rot[i][c]
+        mapped = ((self.pos[i] + sign * lo, self.pos[i] + sign * hi) for lo, hi in self.shapes.material(
+            self.name, c, lj, lk, radius))
+        return sorted((min(a, b), max(a, b)) for a, b in mapped)
+
+
+def _spans(tris: Iterable[Tri], i: int, j: int, k: int, pj: float, pk: float,
+           radius: float) -> list[tuple[float, float]]:
+    """Spans along axis i of the triangles with a vertex within `radius` of the line through (pj, pk), merged
+    across gaps of up to 1 LDU."""
+    r2 = radius * radius
+    return _merge(sorted((min(v[i] for v in tri), max(v[i] for v in tri)) for tri in tris
+                         if any((v[j] - pj) ** 2 + (v[k] - pk) ** 2 <= r2 for v in tri)))
+
+
+def _merge(spans: Iterable[tuple[float, float]]) -> list[tuple[float, float]]:
+    """Sorted spans joined across gaps of up to 1 LDU."""
+    out: list[list[float]] = []
+    for lo, hi in spans:
+        if out and lo <= out[-1][1] + 1:
+            out[-1][1] = max(out[-1][1], hi)
+        else:
+            out.append([lo, hi])
+    return [(lo, hi) for lo, hi in out]
 
 
 def _ray_hit(tris: Iterable[Tri], i: int, j: int, k: int, pj: float, pk: float, start: float, d: int,
