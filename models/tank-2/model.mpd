@@ -6,7 +6,6 @@
 0 // Hub (engine deck) at the front on the motors, top face y -150. Turret motor output at (0, -150, 180).
 0 !LC PORT A 54675 drive_left
 0 !LC PORT B 54675 drive_right
-0 !LC PORT C 54696p01 turret
 1 322 0 -40 60 0 -1 0 1 0 0 0 0 1 32524.dat
 1 1 0 -40 0 1 0 0 0 1 0 0 0 1 6558.dat
 1 1 0 -40 120 1 0 0 0 1 0 0 0 1 6558.dat
@@ -50,22 +49,10 @@
 1 0 -148 0 280 0 0 1 0 1 0 -1 0 0 57519.dat
 1 71 -176 0 280 0 0 1 0 1 0 -1 0 0 3713.dat
 0 STEP
-0 // Turret motor (medium, port C): output up at (0, -110, 240), held by two beams per side on the frames' holes at y -80.
-1 322 0 -60 240 1 0 0 0 1 0 0 0 1 54696p01.dat
-1 0 30 -80 220 1 0 0 0 1 0 0 0 1 61332.dat
-1 0 30 -80 260 1 0 0 0 1 0 0 0 1 61332.dat
-1 0 -30 -80 220 1 0 0 0 1 0 0 0 1 61332.dat
-1 0 -30 -80 260 1 0 0 0 1 0 0 0 1 61332.dat
+0 // Turret motor (medium, port C): built outside as a sub-assembly, lowered between the frames,
+0 // then pinned to the frames' holes at y -80 from outside.
+1 16 0 0 0 1 0 0 0 1 0 0 0 1 turret-motor.ldr
 0 STEP
-1 322 40 -80 240 0 -1 0 1 0 0 0 0 1 32524.dat
-1 322 -40 -80 240 0 -1 0 1 0 0 0 0 1 32524.dat
-1 0 50 -80 180 1 0 0 0 1 0 0 0 1 61332.dat
-1 0 50 -80 200 1 0 0 0 1 0 0 0 1 61332.dat
-1 0 -50 -80 180 1 0 0 0 1 0 0 0 1 61332.dat
-1 0 -50 -80 200 1 0 0 0 1 0 0 0 1 61332.dat
-0 STEP
-1 322 60 -80 220 0 -1 0 1 0 0 0 0 1 32524.dat
-1 322 -60 -80 220 0 -1 0 1 0 0 0 0 1 32524.dat
 1 0 70 -80 160 1 0 0 0 1 0 0 0 1 61332.dat
 1 0 70 -80 240 1 0 0 0 1 0 0 0 1 61332.dat
 1 0 70 -80 280 1 0 0 0 1 0 0 0 1 61332.dat
@@ -95,6 +82,29 @@
 1 16 0 0 0 1 0 0 0 1 0 0 0 1 turntable.ldr
 0 STEP
 1 16 0 0 0 1 0 0 0 1 0 0 0 1 turret.ldr
+0 STEP
+0 NOFILE
+0 FILE turret-motor.ldr
+0 포탑 모터
+0 Name: turret-motor.ldr
+0 Author: Brick Steps
+0 // Medium motor with its output up at (0, -110, 240) and two 7L beams on each side, in the hull's coordinates.
+0 !LC PORT C 54696p01 turret
+1 322 0 -60 240 1 0 0 0 1 0 0 0 1 54696p01.dat
+1 0 30 -80 220 1 0 0 0 1 0 0 0 1 61332.dat
+1 0 30 -80 260 1 0 0 0 1 0 0 0 1 61332.dat
+1 0 -30 -80 220 1 0 0 0 1 0 0 0 1 61332.dat
+1 0 -30 -80 260 1 0 0 0 1 0 0 0 1 61332.dat
+0 STEP
+1 322 40 -80 240 0 -1 0 1 0 0 0 0 1 32524.dat
+1 322 -40 -80 240 0 -1 0 1 0 0 0 0 1 32524.dat
+1 0 50 -80 180 1 0 0 0 1 0 0 0 1 61332.dat
+1 0 50 -80 200 1 0 0 0 1 0 0 0 1 61332.dat
+1 0 -50 -80 180 1 0 0 0 1 0 0 0 1 61332.dat
+1 0 -50 -80 200 1 0 0 0 1 0 0 0 1 61332.dat
+0 STEP
+1 322 60 -80 220 0 -1 0 1 0 0 0 0 1 32524.dat
+1 322 -60 -80 220 0 -1 0 1 0 0 0 0 1 32524.dat
 0 STEP
 0 NOFILE
 0 FILE turntable.ldr

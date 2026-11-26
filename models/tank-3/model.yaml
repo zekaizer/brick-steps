@@ -8,7 +8,7 @@ kits:
   tank-tracks: 1
   lms-esp32v2: 1
 status: draft
-version: 2
+version: 3
 created: '2026-11-22'
 revisions:
 - version: 1
@@ -17,5 +17,8 @@ revisions:
 - version: 2
   date: '2026-11-27'
   note: Fix two pins sharing a hole in each fender and the turret axle meeting a pin
+- version: 3
+  date: '2026-11-27'
+  note: Turret motor and its mount are a sub-assembly lowered between the frames
 story:
   intro: 탱크 3호는 게임패드로 조종해요.

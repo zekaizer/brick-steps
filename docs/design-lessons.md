@@ -21,7 +21,8 @@ What building models has taught us, so the next model does not relearn it. The `
 
 - **Keep structure away from a motor's output face.** The large motor's output boss is a disc of radius 29 that stands 20 LDU proud. Pin frames to the holes at z 80 and 120, behind the boss. (tank-1, 2026-11-22, unverified)
 - **Leave the hub's top face open.** The buttons and the light matrix are there, and a child has to reach them to start a program. Put a turret or a sensor mast next to the hub, not on it. (tank-1, 2026-11-22)
-- **Put every port device in the same submodel as the hub.** The manual's cable card only lists devices placed next to the hub; tank 2's turret motor in its own submodel was left off the card. (tank-2, 2026-11-22)
+- **Put a port device in the hub's submodel or in a sub-assembly placed directly in it.** The manual's cable card lists those devices and no others. Tank 2's turret motor first had to stay in the main model, and from 2026-11-27 it is its own sub-assembly again. (tank-2, 2026-11-22)
+- **Build a motor and the pins beside it before it goes between two frames.** Once both frames stand, a pin between the motor and a frame has no room to be pushed in. Make the motor and its mount a sub-assembly that is lowered in, and push the last pins through the frames from outside. `ldraw_measure.py assembly` reports the trapped pins as pin-blocked. (tank-2, 2026-11-27, unverified)
 - **The hub's height sets the hull roof.** On its motors the hub's top is at y -150, so anything that turns above it starts there. Sink a turntable into the hull with its top face level with the hub's top, rather than stacking it on top. (tank-2, 2026-11-22, unverified)
 - **Draw motors without their cable when the cable is not the point.** The cabled part has a rigid coil that sticks 160 LDU out of the model. (tank-1, 2026-11-22)
 

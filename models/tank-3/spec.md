@@ -6,7 +6,7 @@ Tank 2 driven from a Bluetooth gamepad. An LMS-ESP32 v2 board on port D pairs wi
 
 ## Mechanism
 
-- Everything from tank 2: hub at the front, two large motors on A (left) and B (right), the turret on the turntable turned by the medium motor on C.
+- Everything from tank 2: hub at the front, two large motors on A (left) and B (right), the turret on the turntable turned by the medium motor on C, which is built with its mount as a sub-assembly and lowered between the frames.
 - The board stands at the rear, like a stowage box: a 5 x 7 frame is pinned upright to the turret motor's two rear holes (z 390), and the board sits on the frame's four corner holes with axle pins and bushes, as in `templates/lms-esp32v2-mount.mpd`. Its components face backwards. The frame's top (y -150) stays below the gun, so the turret still turns a full circle.
 - The board runs Anton's Mindstorms' "BluePad LPF2" firmware (already installed on the maintainer's board). It pretends to be a SPIKE colour sensor and packs the gamepad's sticks and buttons into the sensor's raw red, green and blue values.
 
