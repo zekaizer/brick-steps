@@ -1,5 +1,8 @@
 // Brick Steps 3D step view (ADR 0002): replaces the step picture with a model the child can turn.
 // The page stays usable without it: on any failure the rendered pictures remain.
+// The page's thread never parses LDraw: viewer3d-worker.js does, and the page assembles what it sends in slices
+// of a few milliseconds, so taps and scrolling are never held up. Until a section is ready its picture stays,
+// with a pill saying the 3D view is on its way.
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LDrawLoader } from "three/addons/loaders/LDrawLoader.js";
@@ -9,6 +12,7 @@ import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 
 const DROP_MS = 600;
+const SLICE_MS = 8; // longest stretch the page's thread works before letting the browser draw
 const PLUG_TRAVEL = 50; // LDU a cable slides into its port when the cable card opens
 const VIEW_DIR = new THREE.Vector3(-1, 0.85, 1).normalize(); // front-left, from above
 const deck = document.getElementById("deck");
@@ -29,7 +33,7 @@ function buildStage() {
   return stage;
 }
 
-function start(packed) {
+function start(worker) {
   const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const yellow = token("--yellow");
   const stage = buildStage();
@@ -49,11 +53,14 @@ function start(packed) {
   controls.rotateSpeed = 0.8;
   controls.autoRotateSpeed = 3;
 
+  // Materials only: made from the colour lines the worker sends, then looked up by each drawable's colour code.
   const loader = new LDrawLoader();
   loader.setConditionalLineMaterial(LDrawConditionalLineMaterial);
+  let materialsReady = null;
+  const geometries = new Map();
+  const directs = new Map();
   const outline = new LineMaterial({ color: yellow, linewidth: 2 });
   const glow = new Map();
-  const sections = new Map();
   let section = null, drop = null, plugIn = null, queued = false, shownCard = null, cableGroup = null;
 
   function draw() {
@@ -123,7 +130,8 @@ function start(packed) {
   }
 
   function setFresh(part, fresh) {
-    part.outline.visible = fresh;
+    if (fresh && !part.outline) part.outline = buildOutline(part.group);
+    if (part.outline) part.outline.visible = fresh;
     for (const m of part.meshes) {
       m.object.material = !fresh ? m.material : Array.isArray(m.material) ? m.material.map(glowing) : glowing(m.material);
     }
@@ -146,30 +154,128 @@ function start(packed) {
     return line;
   }
 
-  // One submodel, parsed once: its placed references in file order, which is the order the page counts in.
+  let sliceStart = performance.now();
+  async function breathe() {
+    if (performance.now() - sliceStart > SLICE_MS) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      sliceStart = performance.now();
+    }
+  }
+
+  function faceMaterial(code) {
+    if (code === null) return loader.missingColorMaterial;
+    if (code.startsWith("0x2")) {
+      if (!directs.has(code)) directs.set(code, loader.getMaterial(code));
+      return directs.get(code);
+    }
+    return loader.getMaterial(code) || loader.missingColorMaterial;
+  }
+  function material(kind, code) {
+    const face = faceMaterial(code);
+    if (kind === "mesh") return face;
+    const edge = loader.edgeMaterialCache.get(face);
+    return kind === "line" ? edge : loader.conditionalEdgeMaterialCache.get(edge);
+  }
+  function make(node) {
+    let o;
+    if (node.kind === "group") {
+      o = new THREE.Group();
+    } else {
+      const geometry = geometries.get(node.geometry);
+      const mat = Array.isArray(node.colour) ? node.colour.map((c) => material(node.kind, c)) : material(node.kind, node.colour);
+      o = node.kind === "mesh" ? new THREE.Mesh(geometry, mat) : new THREE.LineSegments(geometry, mat);
+      if (node.kind === "conditional") o.isConditionalLine = true;
+    }
+    o.matrix.fromArray(node.matrix);
+    o.matrix.decompose(o.position, o.quaternion, o.scale);
+    return o;
+  }
+
+  // One submodel as the worker sent it: its placed references in file order, which is the order the page counts in.
+  async function assemble(msg) {
+    await materialsReady;
+    for (const g of msg.geometries) {
+      const geometry = new THREE.BufferGeometry();
+      for (const [name, a] of Object.entries(g.attributes)) {
+        geometry.setAttribute(name, new THREE.BufferAttribute(a.array, a.itemSize, a.normalized));
+      }
+      if (g.index) geometry.setIndex(new THREE.BufferAttribute(g.index, 1));
+      for (const group of g.groups) geometry.addGroup(group.start, group.count, group.materialIndex);
+      geometries.set(g.id, geometry);
+    }
+    sliceStart = performance.now();
+    const root = make(msg.root);
+    const stack = [[msg.root, root]];
+    while (stack.length) {
+      const [node, object] = stack.pop();
+      for (const child of node.children) {
+        const o = make(child);
+        object.add(o);
+        stack.push([child, o]);
+      }
+      await breathe();
+    }
+    root.updateMatrixWorld(true);
+    const model = root.children.find((c) => c.isGroup);
+    const parts = [];
+    for (const group of model.children.filter((c) => c.isGroup)) {
+      const meshes = [];
+      const edges = [];
+      group.traverse((o) => {
+        if (o.isMesh) meshes.push({ object: o, material: o.material });
+        else if (o.isLineSegments) edges.push({ object: o, material: o.material });
+      });
+      parts.push({ group, base: group.position.clone(), meshes, edges, outline: null });
+      await breathe();
+    }
+    const ball = new THREE.Sphere(new THREE.Vector3().fromArray(msg.ball.center), msg.ball.radius);
+    const distance = ball.radius / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.05;
+    await renderer.compileAsync(root, camera, scene); // shaders compile without holding the page where the GPU allows
+    return { root, parts, ball, distance };
+  }
+
+  // Sections the worker is asked for, in the order the child is likely to need them.
+  const sections = new Map();
   function load(sub) {
     if (!sections.has(sub)) {
-      sections.set(sub, new Promise((resolve, reject) => {
-        loader.parse("1 16 0 0 0 1 0 0 0 1 0 0 0 1 " + sub + "\n" + packed, resolve, reject);
-      }).then((root) => {
-        root.rotation.x = Math.PI; // LDraw -Y is up
-        root.updateMatrixWorld(true);
-        const model = root.children.find((c) => c.isGroup);
-        const parts = model.children.filter((c) => c.isGroup).map((group) => {
-          const meshes = [];
-          const edges = [];
-          group.traverse((o) => {
-            if (o.isMesh) meshes.push({ object: o, material: o.material });
-            else if (o.isLineSegments) edges.push({ object: o, material: o.material });
-          });
-          return { group, base: group.position.clone(), meshes, edges, outline: buildOutline(group) };
-        });
-        const ball = new THREE.Box3().setFromObject(root).getBoundingSphere(new THREE.Sphere());
-        const distance = ball.radius / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.05;
-        return { root, parts, ball, distance };
-      }));
+      let settle;
+      const promise = new Promise((resolve, reject) => { settle = { resolve, reject }; });
+      promise.catch(() => {}); // a failure is handled where the section is shown
+      sections.set(sub, { promise, settle, ready: false });
+      worker.postMessage({ type: "want", subs: [sub] });
     }
     return sections.get(sub);
+  }
+  function fail(sub, message) {
+    for (const [name, entry] of sections) {
+      if (sub === null || name === sub) entry.settle.reject(new Error(message));
+    }
+  }
+  worker.addEventListener("message", (event) => {
+    const msg = event.data;
+    if (msg.type === "colours") {
+      materialsReady = loader.preloadMaterials(URL.createObjectURL(new Blob([msg.text], { type: "text/plain" })));
+    } else if (msg.type === "section") {
+      const entry = load(msg.sub);
+      assemble(msg).then((built) => { entry.ready = true; entry.settle.resolve(built); }, entry.settle.reject);
+    } else if (msg.type === "failed") {
+      fail(msg.sub, msg.message);
+    }
+  });
+  worker.addEventListener("error", (event) => fail(null, event.message || "worker failed"));
+
+  // The picture stays while the 3D view is made; the pill tells the child it is on its way.
+  function waiting(figure, on) {
+    let pill = figure.querySelector(".loading3d");
+    if (on && !pill) {
+      pill = document.createElement("p");
+      pill.className = "loading3d t-body";
+      pill.setAttribute("role", "status");
+      pill.textContent = "곧 돌려 볼 수 있어요";
+      figure.append(pill);
+    } else if (!on && pill) {
+      pill.remove();
+    }
   }
 
   function goHome() {
@@ -316,7 +422,13 @@ function start(packed) {
       controls.autoRotate = false;
       return;
     }
-    load(figure.dataset.sub).then((next) => {
+    const entry = load(figure.dataset.sub);
+    if (!entry.ready) {
+      waiting(figure, true);
+      worker.postMessage({ type: "want", subs: [figure.dataset.sub] });
+    }
+    entry.promise.then((next) => {
+      waiting(figure, false);
       if (shownCard !== card) return;
       if (section !== next) {
         if (section) scene.remove(section.root);
@@ -329,21 +441,30 @@ function start(packed) {
       resize();
       apply(figure, animate);
     }).catch((err) => {
+      waiting(figure, false);
       console.error(err);
-      sections.delete(figure.dataset.sub);
     });
   }
 
   replay.addEventListener("click", () => apply(stage.parentElement, true));
   stage.querySelector(".home").addEventListener("click", goHome);
   document.addEventListener("brick-steps:show", (e) => show(e.detail.card, e.detail.dir > 0));
+  // Ask for the shown card first, then the finished model, then every section in page order.
   const current = deck.querySelector(".card.on");
+  const subs = [...deck.querySelectorAll("figure[data-sub]")].map((f) => f.dataset.sub);
+  const first = [current?.querySelector("figure[data-sub]")?.dataset.sub, document.querySelector("#done figure[data-sub]")?.dataset.sub];
+  worker.postMessage({ type: "open", url: new URL(source, location.href).href });
+  for (const sub of new Set([...first.filter(Boolean), ...subs])) load(sub);
   if (current) show(current, true);
 }
 
 if (deck && source) {
-  fetch(source)
-    .then((res) => { if (!res.ok) throw new Error(res.status + " " + source); return res.text(); })
-    .then(start)
-    .catch((err) => console.error(err));
+  let worker = null;
+  try {
+    worker = new Worker(new URL("viewer3d-worker.js", import.meta.url), { type: "module" });
+    start(worker);
+  } catch (err) {
+    worker?.terminate(); // no worker or no WebGL: the pictures stay
+    console.error(err);
+  }
 }
