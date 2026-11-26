@@ -144,3 +144,25 @@ def test_insert_line_across_a_pin_in_its_hole_is_a_warning():
     text = model([f"0 0 0 0 {HOLES_X} 32316.dat"], ["0 !LC INSERT FROM -Y", f"0 10 0 0 {I} 61332.dat"])
     assert warnings(text) == [("warning", "insert-blocked",
                                "main.ldr line 6 (61332): from -Y held along X by 32316 (line 3)")]
+
+
+def test_sub_assembly_with_its_own_pin_moves_as_one_unit_along_the_pin():
+    plug = f"0 FILE plug.ldr\n1 0 20 0 0 {HOLES_X} 32316.dat\n1 0 10 0 0 {I} 61332.dat\n0 NOFILE\n"
+    unit = arrive(model([f"0 0 0 0 {HOLES_X} 32316.dat"], [f"16 0 0 0 {I} plug.ldr"], extra=plug))[1]
+    assert (unit.side, unit.rule, unit.partners, unit.blocked_by) == (FROM_PLUS_X, "joint", (0,), None)
+
+
+def test_part_missing_from_the_library_and_a_tilted_pin_drop_from_above():
+    tilted = "0.7071 -0.7071 0 0.7071 0.7071 0 0 0 1"  # 45 degrees about Z: its axis is on no grid line
+    step = arrive(model([f"0 0 0 0 {HOLES_X} 32316.dat"], [f"0 0 -60 0 {I} no-such-part.dat",
+                                                           f"0 10 0 0 {tilted} 61332.dat"]))[1:]
+    assert [(a.side, a.rule, a.blocked_by) for a in step] == [(FROM_ABOVE, "free", None)] * 2
+    assert [m["from"] for m in moves(step)] == [[0, -1, 0], [0, -1, 0]]
+
+
+def test_insert_line_turns_a_whole_sub_assembly():
+    loop = f"0 FILE loop.ldr\n1 0 0 -30 0 {I} 32316.dat\n1 0 0 30 0 {I} 32316.dat\n0 NOFILE\n"
+    text = model([f"0 0 0 0 {ALONG_X} 32316.dat"], ["0 !LC INSERT FROM -X", f"16 30 0 0 {I} loop.ldr"], extra=loop)
+    unit = arrive(text)[1]
+    assert (unit.side, unit.rule, unit.blocked_by) == (FROM_MINUS_X, "override", None)
+    assert warnings(text) == []
