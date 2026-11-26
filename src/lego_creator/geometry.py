@@ -33,6 +33,10 @@ BANDS = frozenset({"85543"})
 # Parts that turn on an axle and need something on both sides to stay in place.
 GEARS = frozenset({"32270", "32498", "46372", "18575", "6589", "32198a", "35185", "4185a", "56903", "39367p01",
                    "49295p01", "57519", "61254"})
+# Pins and axles, pushed along their own axis into what holds them. Derived: AXLES is not a subset of CONNECTORS.
+PIN_LIKE = (CONNECTORS - BUSHES) | AXLES
+# Parts that bend: tread links are joined flat and bands are stretched on.
+FLEXIBLE = frozenset({"57518"}) | BANDS
 
 
 def apply(m: Matrix, t: Vec, v: Vec) -> Vec:
