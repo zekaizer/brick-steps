@@ -7,6 +7,7 @@ All notable changes to this project are recorded here. The format follows
 ## [Unreleased]
 
 ### Added
+- The cable card also lists a motor or sensor built as its own sub-assembly beside the hub, and lists cables by port letter.
 - `lc bom <slug> --left` lists what the model's kits still hold once the model is built, by kit part and colour.
 - 비행기 1호 is published in the gallery.
 - 비행기 1호: an A-10 at about 1:42, 42 cm across, with a raised canopy, a gun under the nose turned through bevel gears, two engine pods whose intakes spin on one motor, tapered wings with a rounded leading edge, four missile racks and twin fins.
