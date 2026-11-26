@@ -21,10 +21,26 @@ from pathlib import Path
 
 import yaml
 
-from .bom import Bom, left, load_id_map, load_inventory, load_unknown_parts, to_kit_space
+from .bom import (
+    Bom,
+    left,
+    load_id_map,
+    load_inventory,
+    load_unknown_parts,
+    to_kit_space,
+)
 from .catalog import check_catalog, model_slug, new_meta, next_number, revise, updated
-from .export import ExportEnv, build_manual, build_site, load_mission_views, write_assets
-from .ldraw import Library, flatten, parse
+from .export import (
+    ExportEnv,
+    build_manual,
+    build_site,
+    load_mission_views,
+    write_assets,
+)
+from .geometry import PIN_LIKE, Shapes
+from .insertion import FROM_ABOVE, insertions
+from .instructions import plan
+from .ldraw import Library, flatten, parse, part_id
 from .missions import check_missions, parse_missions
 from .ports import parse_ports
 from .rebrickable import extract_set_inventory
@@ -197,6 +213,37 @@ def cmd_validate(root: Path, lib: Library, args: argparse.Namespace) -> int:
     return 1 if errors else 0
 
 
+def cmd_insertions(root: Path, lib: Library, args: argparse.Namespace) -> int:
+    _, mpd = _load_model(root, args.slug)
+    doc = parse(mpd.read_text(encoding="utf-8"), default_name=mpd.name)
+    arrivals = insertions(doc, Shapes(lib.roots))
+    sections = plan(doc)
+    width = max(len(s.submodel) for s in sections)
+    rows = []
+    for section in sections:
+        sub = doc.models[section.submodel]
+        here = arrivals[sub.name]
+        label = [f"{part_id(ref.name)} (line {ref.line})" for ref in sub.refs]
+        for i in sorted(range(len(sub.refs)), key=lambda i: (sub.refs[i].step, here[i].order)):
+            ref, a = sub.refs[i], here[i]
+            part = part_id(ref.name)
+            row = (f"{sub.name:{width}} step {ref.step + 1:<3} line {ref.line:<4} {part:12} from {a.side.name}  "
+                   f"{a.rule:8} wave {a.wave}  travel {a.travel:<4.0f}")
+            if a.partners:
+                row += f"  {'into' if part in PIN_LIKE else 'onto'} {', '.join(label[p] for p in a.partners)}"
+            if a.blocked_by is not None:
+                row += f"  BLOCKED by {label[a.blocked_by]}"
+            if a.note:
+                row += f"  ({a.note})"
+            print(row.rstrip())
+            rows.append(a)
+    above = sum(a.side == FROM_ABOVE for a in rows)
+    print(f"{len(rows)} reference(s): {above} from above, {len(rows) - above} with an arrow, "
+          f"{sum(a.blocked_by is not None for a in rows)} blocked, "
+          f"{sum(a.rule == 'override' for a in rows)} set by 0 !LC INSERT")
+    return 0
+
+
 def cmd_bom(root: Path, lib: Library, args: argparse.Namespace) -> int:
     meta, mpd = _load_model(root, args.slug)
     bom = flatten(parse(mpd.read_text(encoding="utf-8"), default_name=mpd.name))
@@ -329,6 +376,10 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("validate", help="check parts, kit inventory, ports, catalog fields and missions")
     s.add_argument("slug")
     s.set_defaults(func=cmd_validate)
+
+    s = sub.add_parser("insertions", help="how the 3D step view brings each part in, in build order")
+    s.add_argument("slug")
+    s.set_defaults(func=cmd_insertions)
 
     s = sub.add_parser("bom", help="print flattened BOM in LDraw ids")
     s.add_argument("slug")

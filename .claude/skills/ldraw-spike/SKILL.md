@@ -134,7 +134,7 @@ The 3D step view moves each new part to its place from one side, in the submodel
 
 A part starts just beyond what it has to clear: along its axis, the span of the part and what it goes into or onto plus 20 LDU, and at least 40 LDU. Parts of one wave that come from the same side travel the same distance, so bushes and a sprocket on one axle slide on as a train.
 
-When a guess is wrong, put one line directly above the reference, in the same step:
+`uv run lc insertions <slug>` lists every reference in build order with its side, rule, wave and travel, what it goes into or onto, and what is in its way. Read it after a model change. When a guess is wrong, put one line directly above the reference, in the same step:
 
 ```
 0 !LC INSERT FROM +X

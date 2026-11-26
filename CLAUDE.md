@@ -22,6 +22,7 @@ Original LEGO SPIKE Prime builds: LDraw models, kit-constrained BOM checks, buil
 - `uv run lc list [--series tank] [--status ready]`
 - `uv run lc validate <slug>` — exit 1 on any error
 - `uv run lc bom <slug>`
+- `uv run lc insertions <slug>` — the side, travel and wave each part comes in with in the 3D step view, in build order
 - `uv run lc instructions <slug> [--no-pdf]` — one manual (HTML + PDF) into `models/<slug>/out/manual/`
 - `uv run lc site [--no-pdf] [--render-cache DIR]` — gallery of ready models + manuals into `site/` (what GitHub Pages serves), and every other model in the hidden lab `site/lab/`; `--render-cache` reuses pictures whose inputs did not change
 - `uv run lc fetch-ldraw`, `uv run lc import-inventory 45678-1 45681-1`

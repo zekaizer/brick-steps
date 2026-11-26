@@ -22,10 +22,11 @@ $M/check.sh path/to/variant.mpd           # any .mpd file; lc validate is skippe
 uv run python $M/views.py plane-1 --out .verify/model-plane-1/views
 ```
 
-`check.sh` runs `lc validate`, then `ldraw_measure.py` `pins`, `overlap`, `axles`, `assembly`, `balance` and `steps`. It prints one summary line per check:
+`check.sh` runs `lc validate` and `lc insertions`, then `ldraw_measure.py` `pins`, `overlap`, `axles`, `assembly`, `balance` and `steps`. It prints one summary line per check:
 
 ```
 validate  plane-1: 0 error(s), 3 warning(s)
+insertions 436 reference(s): 232 from above, 204 with an arrow, 1 blocked, 0 set by 0 !LC INSERT
 pins      0 pin or axle pair(s) sharing a hole
 overlap   75 candidate overlap(s) deeper than 2 LDU among 148 parts
 axles     3 axle finding(s)
@@ -59,6 +60,8 @@ uv run python $M/views.py plane-1 --out .verify/model-plane-1/views --at 0 50 -3
 |---|---|---|---|
 | validate | `error` lines | syntax, matrix, colour, part, kit, port, catalog or mission problem | fix; the model is not done until 0 errors |
 | validate | `turn-interference`, `ground-clearance` | a turning submodel hits a part, or a part is within a plate of the floor (boxes) | look at a close-up; fix or explain in `spec.md` |
+| insertions | `BLOCKED by PART` | the 3D step view finds no clear way in for this part: earlier parts are in its path along its pins, or on every side | reorder the step so the part goes in before what closes it in, or set the side with `0 !LC INSERT FROM <side>` (ldraw-spike skill) |
+| insertions | a side that is not how the part really goes in | the guess is wrong (rays and hole walls, no fingers) | add `0 !LC INSERT FROM <side>` above the reference; `lc validate` checks it |
 | pins | `A x B along X at (…)` | two pins or axles drawn in the same hole | always real: use one long pin (6558) or move one to another hole |
 | overlap | `A x B overlap X… Y… Z…` | two part boxes intersect | candidates only: curved panels, frames and parts nested in a frame overlap on purpose. Run `slice` on the larger part or take a close-up for each new one |
 | axles | `touches-only` | an axle end meets a part's face and does not go into its hole | real: lengthen the axle or move the part |

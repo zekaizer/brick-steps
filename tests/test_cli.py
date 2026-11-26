@@ -218,3 +218,18 @@ def test_site_render_cache_keeps_only_what_the_build_used(tmp_path, monkeypatch,
     assert run(root, "site", "--out", str(tmp_path / "site"), "--no-pdf", "--render-cache", str(cache)) == 0
     assert sorted(p.name for p in cache.iterdir()) == ["kept"]
     assert "render cache: 2 reused, 1 rendered, 1 removed" in capsys.readouterr().out
+
+
+def test_insertions_lists_how_each_part_comes_in_and_counts_them(tmp_path, capsys):
+    root = setup_root(tmp_path)
+    run(root, "new", "x")
+    mpd = root / "models" / "x-1" / "model.mpd"
+    mpd.write_text(mpd.read_text() + "1 4 0 24 0 1 0 0 0 1 0 0 0 1 3001.dat\n0 STEP\n"
+                   "0 !LC INSERT FROM -Z\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n")
+    capsys.readouterr()
+    assert run(root, "insertions", "x-1") == 0
+    assert [line.split() for line in capsys.readouterr().out.splitlines()] == [
+        "main.ldr step 1 line 6 3001 from -Y free wave 0 travel 40".split(),
+        "main.ldr step 2 line 9 3001 from -Z override wave 0 travel 40".split(),
+        "2 reference(s): 1 from above, 1 with an arrow, 0 blocked, 1 set by 0 !LC INSERT".split(),
+    ]
