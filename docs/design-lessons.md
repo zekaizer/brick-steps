@@ -49,9 +49,9 @@ What building models has taught us, so the next model does not relearn it. The `
 ## Pins and holes
 
 - **Run `ldraw_measure.py pins` after every change.** Two pins drawn in one hole look fine in a picture, and `overlap` skips connectors. Plane 1 had 16 such pairs before the check existed. (plane-1, 2026-11-26)
-- **Hold every gear from both sides.** A bush, a half bush, a beam face, an axle connector or an axle with a stop. On a vertical axle the stop goes under the gear, or it slides off. (plane-1, 2026-11-27, unverified)
+- **Hold every gear from both sides.** A bush, a half bush, a beam face, an axle connector, an axle with a stop, or pins through the gear's own holes into the part beside it. On a vertical axle the stop goes under the gear, or it slides off. A gear or pulley on the end of an axle has nothing in front: give the axle one more stud and a bush, as plane 1's gun and fan intakes now have. `ldraw_measure.py axles` reports a gear with no stop as `gear-free` and a gap to the stop as `gear-play`. (plane-1, 2026-11-27, unverified)
 - **Check the holes a turned copy lands on.** A sub-assembly turned 180° for the other side puts its pins at mirrored positions; tank 2's left fender met the hull's own pin in one frame hole. (tank-2, 2026-11-27)
-- **Make sure an axle reaches into each bearing, not just to its face.** Plane 1's gun axle was 10 LDU short of entering its rear T-beam; two axles joined by an axle connector reach it. Neither `pins` nor `overlap` catches this. (plane-1, 2026-11-27)
+- **Make sure an axle reaches into each bearing, not just to its face.** Plane 1's gun axle was 10 LDU short of entering its rear T-beam; two axles joined by an axle connector reach it. `ldraw_measure.py axles` reports an axle that only meets a face as `touches-only`. (plane-1, 2026-11-27)
 - **Join a stack of beams with one long pin through all of them, or with pins at different holes for each joint.** Two short pins at the same hole meet inside the middle beam. The same holds for three rails side by side: one 3L pin through all three. (plane-1, 2026-11-26)
 
 ## Frames and long bodies

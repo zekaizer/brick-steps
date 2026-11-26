@@ -5,7 +5,7 @@ kits:
   45678-1: 2
   45681-1: 1
 status: ready
-version: 2
+version: 3
 created: '2026-11-26'
 revisions:
 - version: 1
@@ -14,5 +14,8 @@ revisions:
 - version: 2
   date: '2026-11-27'
   note: Put the long pins into the hub before the fan motor, and split the deck step
+- version: 3
+  date: '2026-11-27'
+  note: Bushes hold the gun barrels and fan intakes on the ends of their axles
 story:
   intro: 비행기 1호는 기관포와 엔진 팬이 빙글빙글 돌아요.

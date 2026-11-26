@@ -43,6 +43,7 @@ All notable changes to this project are recorded here. The format follows
 - The repository is now github.com/zekaizer/brick-steps, and the manuals are served at https://zekaizer.github.io/brick-steps/. The old lego-creator Pages address no longer works.
 
 ### Fixed
+- 비행기 1호's gun barrels and engine fans have a bush in front of them, so they cannot slide off the end of their axles.
 - Rebuilding a manual no longer picks up step pictures left from an earlier build, which could show an old picture as a sub-assembly's result or as the cover.
 - 탱크 2호 and 탱크 3호 (lab): the fenders and the turret axle no longer show two pins, or a pin and an axle, in one hole; the turret axle now sits 20 LDU deep in the motor instead of 10.
 - The first screen after an update no longer starts large and then shrinks: fonts stay cached across updates, and a font that is not ready when the page appears is not swapped in mid-view.
