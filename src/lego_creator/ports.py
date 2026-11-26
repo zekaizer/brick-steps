@@ -34,14 +34,15 @@ def parse_ports(doc: Document) -> tuple[list[PortAssignment], list[Issue]]:
     issues: list[Issue] = []
     for sub in doc.models.values():
         for meta in sub.metas:
-            if meta[:2] != ["!LC", "PORT"]:
+            tokens = meta.tokens
+            if tokens[:2] != ("!LC", "PORT"):
                 continue
-            if len(meta) != 5:
+            if len(tokens) != 5:
                 issues.append(
-                    Issue("error", "port-malformed", f"{sub.name}: expected '0 !LC PORT <A-F> <part> <role>', got '0 {' '.join(meta)}'")
+                    Issue("error", "port-malformed", f"{sub.name}: expected '0 !LC PORT <A-F> <part> <role>', got '0 {' '.join(tokens)}'")
                 )
                 continue
-            assignments.append(PortAssignment(meta[2].upper(), part_id(meta[3]), meta[4], sub.name))
+            assignments.append(PortAssignment(tokens[2].upper(), part_id(tokens[3]), tokens[4], sub.name))
     return assignments, issues
 
 

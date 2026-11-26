@@ -53,18 +53,19 @@ def parse_turns(doc: Document) -> tuple[list[Turn], list[Issue]]:
     usage = "expected '0 !LC TURN <ax> <ay> <az> <px> <py> <pz> <from> <to> <role>'"
     for sub in doc.models.values():
         for meta in sub.metas:
-            if meta[:2] != ["!LC", "TURN"]:
+            tokens = meta.tokens
+            if tokens[:2] != ("!LC", "TURN"):
                 continue
             try:
-                if len(meta) != 11:
+                if len(tokens) != 11:
                     raise ValueError
-                n = [float(t) for t in meta[2:10]]
+                n = [float(t) for t in tokens[2:10]]
                 if not any(n[:3]):
                     raise ValueError
             except ValueError:
-                issues.append(Issue("error", "turn-malformed", f"{sub.name}: {usage}, got '0 {' '.join(meta)}'"))
+                issues.append(Issue("error", "turn-malformed", f"{sub.name}: {usage}, got '0 {' '.join(tokens)}'"))
                 continue
-            turns.append(Turn(sub.name, (n[0], n[1], n[2]), (n[3], n[4], n[5]), min(n[6], n[7]), max(n[6], n[7]), meta[10]))
+            turns.append(Turn(sub.name, (n[0], n[1], n[2]), (n[3], n[4], n[5]), min(n[6], n[7]), max(n[6], n[7]), tokens[10]))
     return turns, issues
 
 
@@ -201,7 +202,7 @@ def check_turns(doc: Document, turns: list[Turn], box: Callable[[str], Box | Non
 
 
 def check_ground(doc: Document, box: Callable[[str], Box | None], *, clearance: float = 8.0) -> list[Issue]:
-    grounded = {sub.name for sub in doc.models.values() if ["!LC", "GROUND"] in sub.metas}
+    grounded = {sub.name for sub in doc.models.values() if any(m.tokens == ("!LC", "GROUND") for m in sub.metas)}
     if not grounded:
         return []
     parts, instances = placements(doc)
