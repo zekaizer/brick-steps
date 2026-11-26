@@ -46,7 +46,15 @@ jobs:
         if: steps.ldraw.outputs.cache-hit != 'true'
         run: uv run lc fetch-ldraw
       - run: uv run pytest -q
-      - run: uv run lc site --out site
+      # Pictures whose inputs did not change (model, library files, colours, LeoCAD) come from the
+      # last build; lc site keeps only what this build used, so each saved cache is one site's worth.
+      - name: Cache rendered pictures
+        uses: actions/cache@v4
+        with:
+          path: .render-cache
+          key: renders-${{ github.sha }}
+          restore-keys: renders-
+      - run: uv run lc site --out site --render-cache .render-cache
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

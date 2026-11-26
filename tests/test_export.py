@@ -103,6 +103,28 @@ def test_rebuilt_manual_drops_pictures_from_an_earlier_build(tmp_path):
     assert (out / "img" / "hero.png").read_bytes() == (out / "img" / "s0-02.png").read_bytes()
 
 
+def test_a_rebuilt_manual_takes_every_picture_from_the_render_cache(tmp_path):
+    from lego_creator.export import build_manual
+    from lego_creator.render import RenderCache
+
+    tokens = json.loads((ROOT / "design" / "brick-steps.tokens.json").read_text(encoding="utf-8"))
+    model = ("0 FILE main.ldr\n0 Two Bricks\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n0 STEP\n"
+             "1 1 0 -24 0 1 0 0 0 1 0 0 0 1 3001.dat\n0 STEP\n0 NOFILE\n")
+    builds = []
+    for name in ("first", "second"):
+        cache = RenderCache(tmp_path / "cache")
+        env = ExportEnv(ROOT / "ldraw", ROOT / "custom", tokens, tmp_path / "cfg", render_cache=cache)
+        out = tmp_path / name
+        build_manual("두 블록", "bricks", model, env, out, thumbs_dir=out / "parts", thumbs_href="parts/",
+                     assets_href="assets/", sw_href=None, manifest_href=None, pdf=False)
+        builds.append((cache, out))
+    (first, a), (second, b) = builds
+    assert (first.reused, first.rendered) == (0, 3)  # one run for both steps, one per part thumbnail
+    assert (second.reused, second.rendered) == (3, 0)
+    for rel in ("img/s0-01.png", "img/s0-02.png", "img/hero.png"):
+        assert (a / rel).read_bytes() == (b / rel).read_bytes(), rel
+
+
 def test_service_worker_cache_is_named_after_the_build(tmp_path):
     import re
 

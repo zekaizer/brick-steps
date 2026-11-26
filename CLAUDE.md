@@ -23,7 +23,7 @@ Original LEGO SPIKE Prime builds: LDraw models, kit-constrained BOM checks, buil
 - `uv run lc validate <slug>` — exit 1 on any error
 - `uv run lc bom <slug>`
 - `uv run lc instructions <slug> [--no-pdf]` — one manual (HTML + PDF) into `models/<slug>/out/manual/`
-- `uv run lc site [--no-pdf]` — gallery of ready models + manuals into `site/` (what GitHub Pages serves), and every other model in the hidden lab `site/lab/`
+- `uv run lc site [--no-pdf] [--render-cache DIR]` — gallery of ready models + manuals into `site/` (what GitHub Pages serves), and every other model in the hidden lab `site/lab/`; `--render-cache` reuses pictures whose inputs did not change
 - `uv run lc fetch-ldraw`, `uv run lc import-inventory 45678-1 45681-1`
 - `uv run lc release-check vX.Y.Z` — tag, pyproject and CHANGELOG agree; prints release notes
 - `uv run pytest`
