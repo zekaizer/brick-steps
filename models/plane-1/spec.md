@@ -6,6 +6,8 @@ An A-10 Thunderbolt II at about 1:42 (60 LDU to a metre): a low straight wing wi
 
 930 LDU long (37 cm), 1060 wide (42 cm), 300 tall (12 cm); 456 parts, about 700 g by a rough part-by-part estimate.
 
+Published in the gallery on 2026-11-27, before a real build, at the maintainer's request. The open questions below are still open.
+
 ## Mechanism
 
 - **Fuselage.** Three 11 x 7 frames lie end to end at y 0..20, joined by pins through their end walls; the hub sits on the middle one. A 19 x 11 wing frame lies under the middle frame, and long pins run through the wing frame, the middle frame and the hub. Posts at the nose end and long pins at the tail end tie the hub's end faces to the nose frame and to the fan motor.
