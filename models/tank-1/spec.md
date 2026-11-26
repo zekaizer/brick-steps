@@ -23,6 +23,7 @@ None of this has been built. To confirm on the real parts:
 
 - **Track length.** The loop is 864.7 LDU and 29 links of 30 LDU are 870, so the track should be slightly loose. The 30 LDU pitch and the third-party links are unverified; the count may be 28 or 30.
 - **Drive axle depth.** The 7L axle is drawn 40 LDU deep in the motor. If the motor accepts less, the sprocket sits further out.
+- **Sprocket play.** Each sprocket's hub has 8 LDU between it and the bush on either side, because the track runs at x ±148, off the 20 LDU grid of the bushes; `ldraw_measure.py axles` lists this as gear-play. No standard spacer fills 8 LDU. Check that the track keeps the sprockets in line.
 - **Frame rigidity.** Each frame hangs on three pins at its front end, and the idler is 200 LDU behind them. It may need a brace to the hub beams.
 - **Motor direction.** The left motor is mirrored, which is what the app's movement blocks expect for A+B. If the tank drives backwards on "forward", swap the ports in `set_movement_motors`.
 - **Turning.** Mission 3 assumes one rotation turns the tank roughly a quarter; the child finds the real number. Write the measured value back into the mission once a build shows it.

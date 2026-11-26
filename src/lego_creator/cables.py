@@ -1,14 +1,14 @@
 """Cables from hub ports to devices, for the manual's cable step (`0 !LC PORT` lines).
 
 The n-th `0 !LC PORT` line naming a part belongs to the n-th placement of that part in the
-same submodel, in file order.
+same submodel, in file order. A device may sit in a sub-assembly placed directly in the hub's submodel.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .ldraw import Document, PartRef, part_id
+from .ldraw import INHERIT_COLOR, Document, PartRef, part_id
 from .ports import DEVICES, parse_ports
 
 Point = tuple[float, float, float]
@@ -78,33 +78,42 @@ def _sided(cables: list[Cable]) -> list[Cable]:
 
 
 def cable_plan(doc: Document) -> CablePlan | None:
-    """Cables of the first submodel that declares ports; None when no submodel does."""
+    """Cables of the first submodel that declares ports, or that holds the hub and a sub-assembly that does;
+    None when no submodel does."""
     assignments, _ = parse_ports(doc)
     for sub in doc.models.values():
-        mine = [a for a in assignments if a.submodel == sub.name]
-        if not mine:
-            continue
-        placed: dict[str, list[PartRef]] = {}
-        for ref in sub.refs:
-            placed.setdefault(part_id(ref.name), []).append(ref)
         hub = next((r for r in sub.refs if part_id(r.name) in HUB_PARTS), None)
-        used, cables, last = {}, [], hub.step if hub else 0
+        # Each device's own submodel, with the reference that places it in `sub` (None for `sub` itself).
+        # Sub-assemblies count only beside the hub, whose ports their cables reach.
+        groups = [(None, sub)] + ([(r, doc.models[r.name]) for r in sub.refs if r.name in doc.models] if hub else [])
+        cables, last = [], hub.step if hub else 0
         keep = {sub.refs.index(hub)} if hub else set()
-        for a in mine:
-            k = used.get(a.part, 0)
-            used[a.part] = k + 1
-            refs = placed.get(a.part, [])
-            if k >= len(refs):
-                continue  # lc validate reports port-device-missing
-            ref = refs[k]
-            last = max(last, ref.step)
-            keep.add(next(i for i, r in enumerate(sub.refs) if r is ref))
-            cables.append(Cable(
-                a.port, a.part, ref.color, LABELS.get(DEVICES.get(a.part, ""), a.part),
-                _place(ref, CABLE_EXIT.get(a.part, (0, 0, 0))),
-                _place(hub, HUB_PORT_POINTS[a.port]) if hub and a.port in HUB_PORT_POINTS else None,
-                _turn(hub, (-1 if a.port in "ACE" else 1, 0, 0)) if hub else None,
-            ))
+        for via, model in groups:
+            placed: dict[str, list[PartRef]] = {}
+            for ref in model.refs:
+                placed.setdefault(part_id(ref.name), []).append(ref)
+            used: dict[str, int] = {}
+            for a in (a for a in assignments if a.submodel == model.name):
+                k = used.get(a.part, 0)
+                used[a.part] = k + 1
+                refs = placed.get(a.part, [])
+                if k >= len(refs):
+                    continue  # lc validate reports port-device-missing
+                ref = refs[k]
+                point = _place(ref, CABLE_EXIT.get(a.part, (0, 0, 0)))
+                color = ref.color
+                shown = via or ref
+                if via is not None:
+                    point = _place(via, point)
+                    color = via.color if color == INHERIT_COLOR else color
+                last = max(last, shown.step)
+                keep.add(next(i for i, r in enumerate(sub.refs) if r is shown))
+                cables.append(Cable(
+                    a.port, a.part, color, LABELS.get(DEVICES.get(a.part, ""), a.part), point,
+                    _place(hub, HUB_PORT_POINTS[a.port]) if hub and a.port in HUB_PORT_POINTS else None,
+                    _turn(hub, (-1 if a.port in "ACE" else 1, 0, 0)) if hub else None,
+                ))
         if cables:
+            cables.sort(key=lambda c: c.port)
             return CablePlan(sub.name, last, sum(r.step <= last for r in sub.refs), _sided(cables), sorted(keep))
     return None

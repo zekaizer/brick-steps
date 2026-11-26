@@ -21,7 +21,8 @@ What building models has taught us, so the next model does not relearn it. The `
 
 - **Keep structure away from a motor's output face.** The large motor's output boss is a disc of radius 29 that stands 20 LDU proud. Pin frames to the holes at z 80 and 120, behind the boss. (tank-1, 2026-11-22, unverified)
 - **Leave the hub's top face open.** The buttons and the light matrix are there, and a child has to reach them to start a program. Put a turret or a sensor mast next to the hub, not on it. (tank-1, 2026-11-22)
-- **Put every port device in the same submodel as the hub.** The manual's cable card only lists devices placed next to the hub; tank 2's turret motor in its own submodel was left off the card. (tank-2, 2026-11-22)
+- **Put a port device in the hub's submodel or in a sub-assembly placed directly in it.** The manual's cable card lists those devices and no others. Tank 2's turret motor first had to stay in the main model, and from 2026-11-27 it is its own sub-assembly again. (tank-2, 2026-11-22)
+- **Build a motor and the pins beside it before it goes between two frames.** Once both frames stand, a pin between the motor and a frame has no room to be pushed in. Make the motor and its mount a sub-assembly that is lowered in, and push the last pins through the frames from outside. `ldraw_measure.py assembly` reports the trapped pins as pin-blocked. (tank-2, 2026-11-27, unverified)
 - **The hub's height sets the hull roof.** On its motors the hub's top is at y -150, so anything that turns above it starts there. Sink a turntable into the hull with its top face level with the hub's top, rather than stacking it on top. (tank-2, 2026-11-22, unverified)
 - **Draw motors without their cable when the cable is not the point.** The cabled part has a rigid coil that sticks 160 LDU out of the model. (tank-1, 2026-11-22)
 
@@ -49,9 +50,9 @@ What building models has taught us, so the next model does not relearn it. The `
 ## Pins and holes
 
 - **Run `ldraw_measure.py pins` after every change.** Two pins drawn in one hole look fine in a picture, and `overlap` skips connectors. Plane 1 had 16 such pairs before the check existed. (plane-1, 2026-11-26)
-- **Hold every gear from both sides.** A bush, a half bush, a beam face, an axle connector or an axle with a stop. On a vertical axle the stop goes under the gear, or it slides off. (plane-1, 2026-11-27, unverified)
+- **Hold every gear from both sides.** A bush, a half bush, a beam face, an axle connector, an axle with a stop, or pins through the gear's own holes into the part beside it. On a vertical axle the stop goes under the gear, or it slides off. A gear or pulley on the end of an axle has nothing in front: give the axle one more stud and a bush, as plane 1's gun and fan intakes now have. `ldraw_measure.py axles` reports a gear with no stop as `gear-free` and a gap to the stop as `gear-play`. (plane-1, 2026-11-27, unverified)
 - **Check the holes a turned copy lands on.** A sub-assembly turned 180° for the other side puts its pins at mirrored positions; tank 2's left fender met the hull's own pin in one frame hole. (tank-2, 2026-11-27)
-- **Make sure an axle reaches into each bearing, not just to its face.** Plane 1's gun axle was 10 LDU short of entering its rear T-beam; two axles joined by an axle connector reach it. Neither `pins` nor `overlap` catches this. (plane-1, 2026-11-27)
+- **Make sure an axle reaches into each bearing, not just to its face.** Plane 1's gun axle was 10 LDU short of entering its rear T-beam; two axles joined by an axle connector reach it. `ldraw_measure.py axles` reports an axle that only meets a face as `touches-only`. (plane-1, 2026-11-27)
 - **Join a stack of beams with one long pin through all of them, or with pins at different holes for each joint.** Two short pins at the same hole meet inside the middle beam. The same holds for three rails side by side: one 3L pin through all three. (plane-1, 2026-11-26)
 
 ## Frames and long bodies

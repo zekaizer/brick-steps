@@ -50,3 +50,31 @@ def test_no_plan_without_ports_and_no_hub_point_without_a_hub():
 def test_a_medium_motor_cable_leaves_its_rear_end():
     plan = cable_plan(parse("0 FILE main.ldr\n0 !LC PORT C 54696p01 t\n1 322 0 -60 240 1 0 0 0 1 0 0 0 1 54696p01.dat\n"))
     assert plan.cables[0].device_point == (0, -60, 390) and plan.cables[0].label == "중간 모터"
+
+
+def test_a_device_built_in_a_sub_assembly_beside_the_hub_gets_its_cable():
+    text = f"""0 FILE main.ldr
+0 !LC PORT C 54675 drive
+1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat
+1 322 -40 0 0 {RZM} 54675.dat
+0 STEP
+1 14 0 -40 100 1 0 0 0 1 0 0 0 1 45601c01.dat
+0 STEP
+1 16 0 -20 0 1 0 0 0 1 0 0 0 1 mount.ldr
+0 STEP
+1 4 0 -200 0 1 0 0 0 1 0 0 0 1 3001.dat
+0 STEP
+0 NOFILE
+0 FILE mount.ldr
+0 !LC PORT A 54696p01 turret
+1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat
+1 322 0 -60 240 1 0 0 0 1 0 0 0 1 54696p01.dat
+0 STEP
+0 NOFILE
+"""
+    plan = cable_plan(parse(text))
+    assert plan.submodel == "main.ldr" and plan.after_step == 2 and plan.shown == 4
+    assert plan.keep == [1, 2, 3]  # the motor, the hub and the whole sub-assembly stay solid
+    # by port letter, wherever the device is built
+    assert [(c.port, c.label, c.color) for c in plan.cables] == [("A", "중간 모터", 322), ("C", "큰 모터", 322)]
+    assert plan.cables[0].device_point == (0, -80, 390)  # the cable exit moved with the sub-assembly

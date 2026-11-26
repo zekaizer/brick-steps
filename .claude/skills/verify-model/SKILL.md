@@ -62,12 +62,15 @@ uv run python $M/views.py plane-1 --out .verify/model-plane-1/views --at 0 50 -3
 | pins | `A x B along X at (…)` | two pins or axles drawn in the same hole | always real: use one long pin (6558) or move one to another hole |
 | overlap | `A x B overlap X… Y… Z…` | two part boxes intersect | candidates only: curved panels, frames and parts nested in a frame overlap on purpose. Run `slice` on the larger part or take a close-up for each new one |
 | axles | `touches-only` | an axle end meets a part's face and does not go into its hole | real: lengthen the axle or move the part |
-| axles | `gear-free GEAR -Z AXLE` | a gear or wheel has nothing beside it on that side along the axle | real unless the axle stops there: add a bush or half bush, or a beam beside it |
+| axles | `gear-free GEAR -Z AXLE` | nothing on the axle stops the gear or wheel on that side, so it can come off the axle's end | real: add a bush or half bush, or a beam beside it |
+| axles | `gear-play GEAR -Z AXLE 8 LDU to PART` | the gear can slide that far before PART stops it | fill the gap with bushes when the gear meshes with another; a sprocket or track wheel with a few LDU of play (the track keeps it in line) goes in `spec.md` |
 | assembly | `floating` | a part touches nothing placed in an earlier or the same step | move it to a later step, or add what holds it first |
 | assembly | `pin-blocked` | earlier parts cover both ends of a pin, so it cannot be pushed in | put the pin in an earlier step, before the parts that close it in |
 | assembly | `no-slide` | a part goes onto earlier pins but earlier parts block both ways along them | reorder: fit this part before what blocks it, or put the pins in with it |
 | balance | `OUTSIDE` or a small margin | the centre of gravity is outside or near the edge of the floor contacts | move weight (the hub, motors) or widen the stance; the masses are a rough table |
 | steps | `step N: K parts` | a step above 10 parts | split it; children's steps hold 2 to 6 parts (model-design skill) |
+
+`axles` counts a gear pinned to a neighbour through its own pin holes as held, and a rubber band as no stop.
 
 `assembly` follows the instruction steps and checks only straight pushes along the axes: a pin is pushed in along its own axis, and a part slides onto pins of strictly earlier steps. It cannot tell whether fingers reach, whether a part can be tilted in, or whether a beam flexes enough to snap over a pin.
 
