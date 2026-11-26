@@ -83,3 +83,12 @@ def test_line_lists_holes_and_pins_on_it():
     across = measure.line_report(text, (10, 0, 0), "Y")
     assert [h[0] for h in across["holes"]] == ["32523#2"]
 
+
+def test_where_gives_model_coordinates_of_a_part_inside_a_submodel():
+    sub = "0 FILE sub.ldr\n1 0 0 0 20 1 0 0 0 1 0 0 0 1 32316.dat\n0 NOFILE\n"
+    text = model([f"0 0 0 0 {I} 32316.dat", f"16 40 -24 0 {I} sub.ldr"], extra=sub)
+    [(label, at, lo, hi)] = measure.where_report(text, ["sub.ldr#1/32316#0"])
+    assert label == "sub.ldr#1/32316#0" and tuple(round(v) for v in at) == (40, -24, 20)
+    assert round(lo[2]) == -29 and round(hi[2]) == 69 and lo[0] < 40 < hi[0]  # 32316 spans Z -49..49
+    with pytest.raises(SystemExit, match="no part labelled 32316#9"):
+        measure.where_report(text, ["32316#9"])

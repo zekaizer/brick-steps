@@ -9,6 +9,7 @@
     uv run python scripts/ldraw_measure.py balance SLUG       rough centre of gravity against the floor contacts
     uv run python scripts/ldraw_measure.py steps SLUG [MAX]   parts per instruction step, steps above MAX (10)
     uv run python scripts/ldraw_measure.py line SLUG X Y Z AXIS   parts with holes on that line, pins already on it
+    uv run python scripts/ldraw_measure.py where SLUG LABEL...    model position and box of parts a report named
     uv run python scripts/ldraw_measure.py assembly SLUG      parts with nothing to hold them yet, pins that
                                                               cannot be pushed in, parts that cannot slide on
 
@@ -561,6 +562,18 @@ def assembly_report(text: str) -> list[tuple[str, ...]]:
     return out
 
 
+def where_report(text: str, labels: list[str]) -> list[tuple[str, tuple, tuple, tuple]]:
+    """(label, position, box low corner, box high corner) in model coordinates for each label a report printed."""
+    by_label = {p.label: p for p in placements(text)}
+    out = []
+    for label in labels:
+        if label not in by_label:
+            raise SystemExit(f"no part labelled {label}")
+        p = by_label[label]
+        out.append((label, tuple(p.at), *p.box))
+    return out
+
+
 def line_report(text: str, point: tuple[float, float, float], axis: str) -> dict:
     """Parts with holes on the line through `point` along `axis`, and the pins or axles already on it."""
     ps = placements(text)
@@ -616,6 +629,12 @@ def cmd_line(target: str, x: str, y: str, z: str, axis: str) -> None:
     print(f"{len(report['holes'])} part(s) with holes on the line, {len(report['connectors'])} pin(s) or axle(s) on it")
 
 
+def cmd_where(target: str, *labels: str) -> None:
+    for label, at, lo, hi in where_report(model_text(target), list(labels)):
+        span = " ".join(f"{a}{l:.0f}..{h:.0f}" for a, l, h in zip("XYZ", lo, hi))
+        print(f"{label}  at {at[0]:.0f} {at[1]:.0f} {at[2]:.0f}  box {span}")
+
+
 def cmd_assembly(target: str) -> None:
     report = assembly_report(model_text(target))
     for w in report:
@@ -627,7 +646,8 @@ if __name__ == "__main__":
     commands = {"bbox": lambda a: cmd_bbox(a), "holes": lambda a: cmd_holes(*a), "slice": lambda a: cmd_slice(*a),
                 "overlap": lambda a: cmd_overlap(*a), "pins": lambda a: cmd_pins(*a), "axles": lambda a: cmd_axles(*a),
                 "balance": lambda a: cmd_balance(*a), "steps": lambda a: cmd_steps(*a),
-                "assembly": lambda a: cmd_assembly(*a), "line": lambda a: cmd_line(*a)}
+                "assembly": lambda a: cmd_assembly(*a), "line": lambda a: cmd_line(*a),
+                "where": lambda a: cmd_where(*a)}
     if len(sys.argv) < 3 or sys.argv[1] not in commands:
         sys.exit(__doc__)
     commands[sys.argv[1]](sys.argv[2:])
