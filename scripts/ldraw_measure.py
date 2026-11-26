@@ -1,4 +1,4 @@
-"""Measure LDraw parts and models before placing or reviewing them. Standard library only.
+"""Measure LDraw parts and models before placing or reviewing them. Part geometry is lego_creator.geometry.
 
     uv run python scripts/ldraw_measure.py bbox PART...       bounding box of each part
     uv run python scripts/ldraw_measure.py holes PART         pin/axle hole positions and axes
@@ -27,29 +27,32 @@ past every part placed before it. `balance` weighs parts from a rough table and 
 """
 from __future__ import annotations
 
-import functools
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from lego_creator.geometry import (
+    AXLES,
+    BANDS,
+    BUSHES,
+    CONNECTORS,
+    GEARS,
+    IDENTITY,
+    STOP_AT_PLUS_X,
+    Matrix,
+    Shapes,
+    Solid,
+    apply,
+    box,
+    compose,
+    first_blocker,
+    refs,
+)
+
 ROOT = Path(__file__).resolve().parents[1]
 ROOTS = (ROOT / "ldraw", ROOT / "custom")
-# Primitives whose local Y axis is the axis of a hole or a pin.
-HOLES = ("peghole", "axlehol", "axl3hole", "connhole", "beamhole", "npeghol")
-# Parts that are meant to sit inside other parts.
-CONNECTORS = {"61332", "6558", "3673", "3749", "43093", "11214", "18651", "32054", "4274", "3713", "32123b",
-              "32062", "4519", "3705", "32073", "3706", "44294", "3707", "60485", "3708", "87083"}
-# Connectors that sit on an axle rather than in a hole.
-BUSHES = {"3713", "32123b"}
-AXLES = {"4519", "3705", "32073", "3706", "44294", "3707", "60485", "3708", "23948", "50450", "87083", "15462",
-         "55013", "32062"}
-# Axles with a stop at their local +X end.
-STOP_AT_PLUS_X = {"87083", "15462", "55013"}
-# Parts that turn on an axle and need something on both sides to stay in place.
-# Parts that bend away instead of stopping a gear.
-BANDS = {"85543"}
-GEARS = {"32270", "32498", "46372", "18575", "6589", "32198a", "35185", "4185a", "56903", "39367p01", "49295p01",
-         "57519", "61254"}
+SHAPES = Shapes(ROOTS)
+find, points, triangles, hole_list = SHAPES.find, SHAPES.points, SHAPES.triangles, SHAPES.holes
 # Rough weights in grams; any other part is weighed by its box, beams by their holes.
 GRAMS = {"45601c01": 155, "54675": 55, "54675c01": 58, "54696p01": 38, "54696p01c01": 41, "37308c01": 15,
          "37316c01": 20, "37312c01": 15, "39794": 7, "39790": 10, "39369": 20, "64179": 4, "15458": 6, "11954": 6,
@@ -58,56 +61,6 @@ GRAMS = {"45601c01": 155, "54675": 55, "54675c01": 58, "54696p01": 38, "54696p01
 BEAM_HOLES = {"32523": 3, "32316": 5, "32524": 7, "40490": 9, "32525": 11, "41239": 13, "32278": 15}
 # Pairs that mesh by design and always intersect as boxes.
 MESHING = {frozenset(("57518", "57519")), frozenset(("57518",))}  # tread on sprocket, tread link on its neighbour
-Matrix = tuple[tuple[float, float, float], ...]
-IDENTITY: Matrix = ((1, 0, 0), (0, 1, 0), (0, 0, 1))
-
-
-def find(name: str) -> Path | None:
-    name = name.strip().replace("\\", "/").lower()
-    for root in ROOTS:
-        for folder in ("parts", "p", ""):
-            path = root / folder / name
-            if path.is_file():
-                return path
-    return None
-
-
-def apply(m: Matrix, t: tuple[float, float, float], v: tuple[float, float, float]) -> tuple[float, float, float]:
-    return tuple(m[i][0] * v[0] + m[i][1] * v[1] + m[i][2] * v[2] + t[i] for i in range(3))
-
-
-def compose(m: Matrix, n: Matrix) -> Matrix:
-    return tuple(tuple(sum(m[i][k] * n[k][j] for k in range(3)) for j in range(3)) for i in range(3))
-
-
-def refs(text: str):
-    """(position, matrix, file name) of every type 1 line."""
-    for line in text.splitlines():
-        t = line.split(None, 14)
-        if len(t) == 15 and t[0] == "1":
-            v = [float(x) for x in t[2:14]]
-            yield tuple(v[:3]), (tuple(v[3:6]), tuple(v[6:9]), tuple(v[9:12])), t[14].strip()
-
-
-@functools.lru_cache(maxsize=None)
-def points(name: str) -> tuple[tuple[float, float, float], ...]:
-    path = find(name)
-    if path is None:
-        return ()
-    text = path.read_text(encoding="utf-8", errors="replace")
-    out = []
-    for pos, m, child in refs(text):
-        out += [apply(m, pos, p) for p in points(child)]
-    for line in text.splitlines():
-        t = line.split()
-        if t and t[0] in ("3", "4"):
-            v = [float(x) for x in t[2:]]
-            out += [tuple(v[i:i + 3]) for i in range(0, len(v) - 2, 3)]
-    return tuple(out)
-
-
-def box(pts) -> tuple[list[float], list[float]]:
-    return [min(p[i] for p in pts) for i in range(3)], [max(p[i] for p in pts) for i in range(3)]
 
 
 def fmt(lo: list[float], hi: list[float]) -> str:
@@ -124,28 +77,6 @@ def cmd_slice(part: str, axis: str, lo: str, hi: str) -> None:
     i = "XYZ".index(axis.upper())
     pts = [p for p in points(part + ".dat") if float(lo) <= p[i] <= float(hi)]
     print(fmt(*box(pts)) if pts else "no geometry in that range")
-
-
-@functools.lru_cache(maxsize=None)
-def hole_list(name: str) -> tuple[tuple[tuple[tuple[float, float, float], str], tuple[str, ...]], ...]:
-    """((position, axis letter), primitive names) of every hole in a part, in its own frame."""
-    found: dict[tuple, set[str]] = {}
-
-    def walk(name: str, m: Matrix, t: tuple[float, float, float]) -> None:
-        path = find(name)
-        if path is None:
-            return
-        for pos, n, child in refs(path.read_text(encoding="utf-8", errors="replace")):
-            world, at = compose(m, n), apply(m, t, pos)
-            base = child.replace("\\", "/").lower().rsplit("/", 1)[-1]
-            if base.startswith(HOLES):
-                axis = [abs(world[i][1]) for i in range(3)]
-                found.setdefault((tuple(round(c, 1) for c in at), "XYZ"[axis.index(max(axis))]), set()).add(base)
-            else:
-                walk(child, world, at)
-
-    walk(name, IDENTITY, (0, 0, 0))
-    return tuple((k, tuple(sorted(v))) for k, v in sorted(found.items(), key=lambda kv: (kv[0][1], kv[0][0])))
 
 
 def cmd_holes(part: str) -> None:
@@ -228,54 +159,10 @@ def cmd_pins(slug: str, tolerance: float = 1.0) -> None:
     print(f"{hits} pin or axle pair(s) sharing a hole")
 
 
-@functools.lru_cache(maxsize=None)
-def triangles(name: str) -> tuple[tuple[tuple[float, float, float], ...], ...]:
-    path = find(name)
-    if path is None:
-        return ()
-    text = path.read_text(encoding="utf-8", errors="replace")
-    out = []
-    for pos, m, child in refs(text):
-        out += [tuple(apply(m, pos, v) for v in tri) for tri in triangles(child)]
-    for line in text.splitlines():
-        t = line.split()
-        if t and t[0] == "3" and len(t) >= 11:
-            v = [float(x) for x in t[2:11]]
-            out.append((tuple(v[0:3]), tuple(v[3:6]), tuple(v[6:9])))
-        elif t and t[0] == "4" and len(t) >= 14:
-            v = [float(x) for x in t[2:14]]
-            a, b, c, d = tuple(v[0:3]), tuple(v[3:6]), tuple(v[6:9]), tuple(v[9:12])
-            out += [(a, b, c), (a, c, d)]
-    return tuple(out)
-
-
-@dataclass
-class Placed:
-    label: str
-    part: str
-    key: str
-    world: Matrix
-    at: tuple[float, float, float]
+@dataclass(eq=False)
+class Placed(Solid):
     levels: tuple[tuple[str, int], ...]  # (sub-assembly instance, step in it) from the main model down
     ground: bool
-
-    @functools.cached_property
-    def points(self) -> list[tuple[float, float, float]]:
-        return [apply(self.world, self.at, p) for p in points(self.key)]
-
-    @functools.cached_property
-    def box(self) -> tuple[list[float], list[float]]:
-        return box(self.points) if self.points else ([0.0] * 3, [0.0] * 3)
-
-    @functools.cached_property
-    def triangles(self) -> list[tuple[tuple[float, float, float], ...]]:
-        return [tuple(apply(self.world, self.at, v) for v in tri) for tri in triangles(self.key)]
-
-    def axis(self, column: int) -> int | None:
-        """World axis that the part's local axis `column` points along, if it is axis-aligned."""
-        v = [abs(self.world[i][column]) for i in range(3)]
-        i = v.index(max(v))
-        return i if v[i] > 0.999 else None
 
 
 def _blocks(text: str) -> dict[str, list[str]]:
@@ -312,7 +199,7 @@ def placements(text: str) -> list[Placed]:
                     walk(child, world, at, f"{path}{child}#{k}/", here, ground or child in grounds)
                 else:
                     part = child.removesuffix(".dat")
-                    out.append(Placed(f"{path}{part}#{k}", part, child, world, at, here, ground))
+                    out.append(Placed(f"{path}{part}#{k}", part, child, world, at, SHAPES, here, ground))
                 k += 1
 
     main = next(iter(blocks))
@@ -332,56 +219,9 @@ def _touch(a: tuple[list[float], list[float]], b: tuple[list[float], list[float]
     return all(a[0][i] - gap <= b[1][i] and b[0][i] - gap <= a[1][i] for i in range(3))
 
 
-def _ray_hit(tris, i: int, j: int, k: int, pj: float, pk: float, start: float, d: int) -> bool:
-    """Does the line along axis i through (pj, pk), from `start` in direction d, cross any triangle?"""
-    for a, b, c in tris:
-        if pj < min(a[j], b[j], c[j]) or pj > max(a[j], b[j], c[j]):
-            continue
-        if pk < min(a[k], b[k], c[k]) or pk > max(a[k], b[k], c[k]):
-            continue
-        det = (b[j] - a[j]) * (c[k] - a[k]) - (c[j] - a[j]) * (b[k] - a[k])
-        if abs(det) < 1e-9:
-            continue
-        l1 = ((pj - a[j]) * (c[k] - a[k]) - (c[j] - a[j]) * (pk - a[k])) / det
-        l2 = ((b[j] - a[j]) * (pk - a[k]) - (pj - a[j]) * (b[k] - a[k])) / det
-        if l1 < -1e-6 or l2 < -1e-6 or l1 + l2 > 1 + 1e-6:
-            continue
-        if (a[i] + l1 * (b[i] - a[i]) + l2 * (c[i] - a[i]) - start) * d > 0.5:
-            return True
-    return False
-
-
 def _blocker(parts: list[Placed], i: int, pj: float, pk: float, start: float, d: int, skip=()) -> str | None:
-    j, k = [x for x in range(3) if x != i]
-    for q in parts:
-        if q.label in skip:
-            continue
-        lo, hi = q.box
-        if not (lo[j] <= pj <= hi[j] and lo[k] <= pk <= hi[k]) or (hi[i] if d > 0 else -lo[i]) <= start * d:
-            continue
-        if _ray_hit(q.triangles, i, j, k, pj, pk, start, d):
-            return q.label
-    return None
-
-
-def _ends(p: Placed, i: int) -> tuple[float, float]:
-    lo, hi = box(points(p.key))
-    return tuple(sorted(p.at[i] + p.world[i][0] * x for x in (lo[0], hi[0])))
-
-
-def _material(q: Placed, i: int, pj: float, pk: float, radius: float) -> list[tuple[float, float]]:
-    """Spans along axis i covered by q's faces that come within `radius` of the line through (pj, pk)."""
-    j, k = [x for x in range(3) if x != i]
-    r2 = radius * radius
-    spans = sorted((min(v[i] for v in tri), max(v[i] for v in tri)) for tri in q.triangles
-                   if any((v[j] - pj) ** 2 + (v[k] - pk) ** 2 <= r2 for v in tri))
-    out: list[list[float]] = []
-    for lo, hi in spans:
-        if out and lo <= out[-1][1] + 1:
-            out[-1][1] = max(out[-1][1], hi)
-        else:
-            out.append([lo, hi])
-    return [(lo, hi) for lo, hi in out]
+    hit = first_blocker(parts, i, pj, pk, start, d, skip=skip)
+    return hit.label if hit else None
 
 
 def _pinned(g: Placed, i: int, axle: Placed, ps: list[Placed]) -> bool:
@@ -391,18 +231,18 @@ def _pinned(g: Placed, i: int, axle: Placed, ps: list[Placed]) -> bool:
     for q in ps:
         if q is axle or q.part not in CONNECTORS or q.part in BUSHES or q.axis(0) != i:
             continue
-        if not (lo[j] < q.at[j] < hi[j] and lo[k] < q.at[k] < hi[k]):
+        if not (lo[j] < q.pos[j] < hi[j] and lo[k] < q.pos[k] < hi[k]):
             continue
-        if (q.at[j] - axle.at[j]) ** 2 + (q.at[k] - axle.at[k]) ** 2 < 16:
+        if (q.pos[j] - axle.pos[j]) ** 2 + (q.pos[k] - axle.pos[k]) ** 2 < 16:
             continue
-        e0, e1 = _ends(q, i)
+        e0, e1 = q.ends(i)
         if e1 <= lo[i] or e0 >= hi[i]:
             continue
         for a, b in ((e0, lo[i]), (hi[i], e1)):
             if b - a < 4:
                 continue
             point = [0.0] * 3
-            point[i], point[j], point[k] = (a + b) / 2, q.at[j], q.at[k]
+            point[i], point[j], point[k] = (a + b) / 2, q.pos[j], q.pos[k]
             if any(r is not g and r is not q and all(r.box[0][x] <= point[x] <= r.box[1][x] for x in range(3)) for r in ps):
                 return True
     return False
@@ -420,8 +260,8 @@ def axle_report(text: str) -> list[tuple[str, ...]]:
         if a.part not in AXLES or i is None:
             continue
         j, k = [x for x in range(3) if x != i]
-        pj, pk = a.at[j], a.at[k]
-        s0, s1 = _ends(a, i)
+        pj, pk = a.pos[j], a.pos[k]
+        s0, s1 = a.ends(i)
         near = []
         for q in ps:
             if q is a or (q.part in CONNECTORS and q.part not in BUSHES):
@@ -433,18 +273,18 @@ def axle_report(text: str) -> list[tuple[str, ...]]:
         for q in near:
             if q.part in GEARS | BUSHES:
                 continue
-            for c0, c1 in _material(q, i, pj, pk, 8):
+            for c0, c1 in q.material(i, pj, pk, 8):
                 if -1 <= min(c1, s1) - max(c0, s0) <= 1:
                     out.append(("touches-only", a.label, f"{q.label} {axis} {c0:.0f}..{c1:.0f}, axle {s0:.0f}..{s1:.0f}"))
         stop = None
         if a.part in STOP_AT_PLUS_X:
-            stop = s1 if a.world[i][0] > 0 else s0
+            stop = s1 if a.rot[i][0] > 0 else s0
         for g in near:
             if g.part not in GEARS or _pinned(g, i, a, ps):
                 continue
             others = [(o0, o1, o.label) for o in near if o is not g and o.part not in BANDS
-                      for o0, o1 in _material(o, i, pj, pk, 12)]
-            for c0, c1 in _material(g, i, pj, pk, 8):
+                      for o0, o1 in o.material(i, pj, pk, 12)]
+            for c0, c1 in g.material(i, pj, pk, 8):
                 if min(c1, s1) - max(c0, s0) <= 1:
                     continue
                 for face, sign in ((c0, -1), (c1, 1)):
@@ -465,7 +305,7 @@ def _mass(p: Placed) -> float:
         return GRAMS[p.part]
     if p.part in BEAM_HOLES:
         return 0.23 * BEAM_HOLES[p.part]
-    lo, hi = box(points(p.key)) if points(p.key) else ([0.0] * 3, [0.0] * 3)
+    lo, hi = box(points(p.name)) if points(p.name) else ([0.0] * 3, [0.0] * 3)
     return min(20.0, 1.5e-5 * (hi[0] - lo[0]) * (hi[1] - lo[1]) * (hi[2] - lo[2]))
 
 
@@ -493,7 +333,7 @@ def balance_report(text: str) -> dict:
     """Rough mass and centre of gravity (x, z) against the hull of the lowest points of `0 !LC GROUND` parts."""
     ps = placements(text)
     total = sum(_mass(p) for p in ps)
-    cg = (sum(_mass(p) * p.at[0] for p in ps) / total, sum(_mass(p) * p.at[2] for p in ps) / total)
+    cg = (sum(_mass(p) * p.pos[0] for p in ps) / total, sum(_mass(p) * p.pos[2] for p in ps) / total)
     ground = [p for p in ps if p.ground]
     floor = max((p.box[1][1] for p in ground), default=0.0)
     hull = _hull([(v[0], v[2]) for p in ground for v in p.points if v[1] >= floor - 2])
@@ -557,19 +397,19 @@ def assembly_report(text: str) -> list[tuple[str, ...]]:
         if p.part not in CONNECTORS or p.part in BUSHES or i is None:
             continue
         j, k = [x for x in range(3) if x != i]
-        s0, s1 = _ends(p, i)
+        s0, s1 = p.ends(i)
         earlier = [q for q in ps if q is not p and _before(q, p, False)]
-        hits = [_blocker(earlier, i, p.at[j], p.at[k], s1, 1), _blocker(earlier, i, p.at[j], p.at[k], s0, -1)]
+        hits = [_blocker(earlier, i, p.pos[j], p.pos[k], s1, 1), _blocker(earlier, i, p.pos[j], p.pos[k], s0, -1)]
         if all(hits):
             out.append(("pin-blocked", p.label, f"step {p.levels[-1][1]}: +{'XYZ'[i]} {hits[0]}, -{'XYZ'[i]} {hits[1]}"))
     for p in ps:
         if p.part in CONNECTORS:
             continue
         holes = {}
-        for (pos, axis), _ in hole_list(p.key):
-            w = apply(p.world, p.at, pos)
+        for (pos, axis), _ in hole_list(p.name):
+            w = apply(p.rot, p.pos, pos)
             i = "XYZ".index(axis)
-            vec = [abs(p.world[r][i]) for r in range(3)]
+            vec = [abs(p.rot[r][i]) for r in range(3)]
             wi = vec.index(max(vec))
             if vec[wi] > 0.999:
                 holes.setdefault(wi, set()).add((round(w[0], 1), round(w[1], 1), round(w[2], 1)))
@@ -578,11 +418,11 @@ def assembly_report(text: str) -> list[tuple[str, ...]]:
             # Only pins already in place force the part to slide on; pins of the same step go in after it.
             pins = [q for q in ps if q.part in CONNECTORS and q.part not in BUSHES and q.axis(0) == i
                     and _before(q, p, False)
-                    and any(abs(q.at[j] - c[j]) < 1 and abs(q.at[k] - c[k]) < 1 for c in centres)]
+                    and any(abs(q.pos[j] - c[j]) < 1 and abs(q.pos[k] - c[k]) < 1 for c in centres)]
             if not pins:
                 continue
             on_line = {q.label for q in ps if q.part in CONNECTORS and q.axis(0) == i
-                       and any(abs(q.at[j] - c[j]) < 1 and abs(q.at[k] - c[k]) < 1 for c in centres)}
+                       and any(abs(q.pos[j] - c[j]) < 1 and abs(q.pos[k] - c[k]) < 1 for c in centres)}
             earlier = [q for q in ps if q is not p and _before(q, p, False)]
             blocked = []
             for d in (1, -1):
@@ -603,7 +443,7 @@ def where_report(text: str, labels: list[str]) -> list[tuple[str, tuple, tuple, 
         if label not in by_label:
             raise SystemExit(f"no part labelled {label}")
         p = by_label[label]
-        out.append((label, tuple(p.at), *p.box))
+        out.append((label, tuple(p.pos), *p.box))
     return out
 
 
@@ -615,14 +455,14 @@ def line_report(text: str, point: tuple[float, float, float], axis: str) -> dict
     holes, connectors = [], []
     for p in ps:
         if p.part in CONNECTORS and p.part not in BUSHES:
-            if p.axis(0) == i and abs(p.at[j] - point[j]) < 1 and abs(p.at[k] - point[k]) < 1:
-                connectors.append((p.label, *_ends(p, i)))
+            if p.axis(0) == i and abs(p.pos[j] - point[j]) < 1 and abs(p.pos[k] - point[k]) < 1:
+                connectors.append((p.label, *p.ends(i)))
             continue
         along = []
-        for (pos, letter), _ in hole_list(p.key):
-            if abs(p.world[i]["XYZ".index(letter)]) < 0.999:
+        for (pos, letter), _ in hole_list(p.name):
+            if abs(p.rot[i]["XYZ".index(letter)]) < 0.999:
                 continue
-            w = apply(p.world, p.at, pos)
+            w = apply(p.rot, p.pos, pos)
             if abs(w[j] - point[j]) < 1 and abs(w[k] - point[k]) < 1:
                 along.append(w[i])
         if along:
