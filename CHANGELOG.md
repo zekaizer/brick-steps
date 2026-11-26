@@ -45,6 +45,7 @@ All notable changes to this project are recorded here. The format follows
 - The repository is now github.com/zekaizer/brick-steps, and the manuals are served at https://zekaizer.github.io/brick-steps/. The old lego-creator Pages address no longer works.
 
 ### Fixed
+- Opening the finished model, or any step, the first time no longer freezes the manual. 비행기 1호 used to stand still for about 13 seconds after a tap on 완성. The 3D model is now prepared in the background, starting as the manual opens, and until it is ready the step picture shows with a "곧 돌려 볼 수 있어요" pill.
 - 탱크 2호 and 탱크 3호 (lab): the turret motor and its mount are built first as their own sub-assembly, because the pins beside the motor cannot be pushed in once it sits between the frames.
 - 탱크 4호 (lab): the horn idlers and road wheels can no longer slide along their axles, and the rubber band's pins go in before the road wheel covers them.
 - 비행기 1호's gun barrels and engine fans have a bush in front of them, so they cannot slide off the end of their axles.

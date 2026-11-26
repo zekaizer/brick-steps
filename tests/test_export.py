@@ -71,6 +71,12 @@ def test_build_site_end_to_end(tmp_path):
     for src in __import__("re").findall(r'src="([^"]+\.png)"', page):
         assert (out / "bot" / src).resolve().is_file(), src
     assert (out / "bot" / "manual.pdf").read_bytes()[:4] == b"%PDF"
+    # The 3D model is parsed in a module worker, which has no import map: its imports are plain paths.
+    worker = (out / "assets" / "viewer3d-worker.js").read_text(encoding="utf-8")
+    for rel in __import__("re").findall(r'from "(\./[^"]+)"', worker):
+        assert (out / "assets" / rel).is_file(), rel
+    loader = (out / "assets" / "vendor" / "three-0.187.0" / "worker" / "LDrawLoader.js").read_text(encoding="utf-8")
+    assert "from 'three'" not in loader and "} from '../three.module.js';" in loader
     sw = (out / "sw.js").read_text(encoding="utf-8")
     for rel in __import__("re").findall(r'"\./(assets/[^"]+)"', sw):  # the offline shell must exist
         assert (out / rel).is_file(), rel

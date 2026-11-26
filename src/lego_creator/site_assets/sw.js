@@ -12,6 +12,8 @@ const SHELL = [
   "./", "./assets/site.css", "./assets/manual.js", "./manifest.webmanifest", "./brand/brick-steps-lockup.svg", "./favicon.svg",
   // 3D step view (ADR 0002)
   "./assets/viewer3d.js",
+  "./assets/viewer3d-worker.js",
+  "./assets/vendor/three-0.187.0/worker/LDrawLoader.js",
   "./assets/vendor/three-0.187.0/three.module.js",
   "./assets/vendor/three-0.187.0/three.core.js",
   "./assets/vendor/three-0.187.0/addons/controls/OrbitControls.js",
