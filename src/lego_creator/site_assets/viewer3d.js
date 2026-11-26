@@ -67,7 +67,7 @@ function start(worker) {
   const outline = new LineMaterial({ color: yellow, linewidth: 2 });
   // Arrows are drawn over the model, like the port letters, so one on the far side still shows.
   const arrowFill = new THREE.MeshBasicMaterial({ color: yellow, depthTest: false });
-  const arrowEdge = new LineMaterial({ color: token("--ink"), linewidth: 2, depthTest: false });
+  const arrowEdge = new THREE.MeshBasicMaterial({ color: token("--ink"), depthTest: false });
   const glow = new Map();
   let section = null, arrive = null, plugIn = null, queued = false, shownCard = null, cableGroup = null, arrows = null;
 
@@ -410,16 +410,20 @@ function start(worker) {
   function arrowMesh(m) {
     const length = THREE.MathUtils.clamp(m.travel, ARROW_LENGTH[0] * section.ball.radius,
       ARROW_LENGTH[1] * section.ball.radius);
-    const head = length * 0.35;
-    const shaft = new THREE.CylinderGeometry(length * 0.06, length * 0.06, length - head, 16).translate(0, (length - head) / 2, 0);
-    const cone = new THREE.ConeGeometry(length * 0.16, head, 24).translate(0, length - head / 2, 0);
+    const head = length * 0.4, e = length * 0.03;
+    // The ink copy is drawn first and a little larger, so only the outline shows round the yellow fill.
+    const shape = (grow) => [
+      new THREE.CylinderGeometry(length * 0.08 + grow, length * 0.08 + grow, length - head + grow, 16)
+        .translate(0, (length - head) / 2, 0),
+      new THREE.ConeGeometry(length * 0.2 + grow, head + 2 * grow, 24).translate(0, length - head / 2, 0),
+    ];
     const group = new THREE.Group();
-    for (const geometry of [shaft, cone]) {
-      const fill = new THREE.Mesh(geometry, arrowFill);
-      fill.renderOrder = 10;
-      const edge = new LineSegments2(new LineSegmentsGeometry().fromEdgesGeometry(new THREE.EdgesGeometry(geometry, 30)), arrowEdge);
-      edge.renderOrder = 11;
-      group.add(fill, edge);
+    for (const [geometries, material, order] of [[shape(e), arrowEdge, 10], [shape(0), arrowFill, 11]]) {
+      for (const geometry of geometries) {
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.renderOrder = order;
+        group.add(mesh);
+      }
     }
     const from = new THREE.Vector3(...m.from);
     group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), from.clone().negate());
