@@ -104,3 +104,10 @@ def test_where_gives_model_coordinates_of_a_part_inside_a_submodel():
     with pytest.raises(SystemExit, match="no part labelled 32316#9"):
         measure.where_report(text, ["32316#9"])
 
+
+def test_gear_pinned_to_the_beam_beside_it_is_held():
+    # pins through the gear's own pin holes into the beam above; nothing under the gear on its axle
+    pins = [f"0 0 10 {z} {UP} 61332.dat" for z in (-20, 20)]
+    text = model([f"0 0 0 0 {I} 32316.dat", f"0 0 40 0 {UP} 4519.dat", f"0 0 20 0 {FLAT} 46372.dat", *pins])
+    report = measure.axle_report(text)
+    assert kinds(report, "gear-free") == [] and kinds(report, "gear-play") == []

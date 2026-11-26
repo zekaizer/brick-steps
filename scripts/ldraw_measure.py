@@ -384,10 +384,35 @@ def _material(q: Placed, i: int, pj: float, pk: float, radius: float) -> list[tu
     return [(lo, hi) for lo, hi in out]
 
 
+def _pinned(g: Placed, i: int, axle: Placed, ps: list[Placed]) -> bool:
+    """A pin or axle beside `axle` runs through the gear and on into another part, so the gear cannot slide."""
+    j, k = [x for x in range(3) if x != i]
+    lo, hi = g.box
+    for q in ps:
+        if q is axle or q.part not in CONNECTORS or q.part in BUSHES or q.axis(0) != i:
+            continue
+        if not (lo[j] < q.at[j] < hi[j] and lo[k] < q.at[k] < hi[k]):
+            continue
+        if (q.at[j] - axle.at[j]) ** 2 + (q.at[k] - axle.at[k]) ** 2 < 16:
+            continue
+        e0, e1 = _ends(q, i)
+        if e1 <= lo[i] or e0 >= hi[i]:
+            continue
+        for a, b in ((e0, lo[i]), (hi[i], e1)):
+            if b - a < 4:
+                continue
+            point = [0.0] * 3
+            point[i], point[j], point[k] = (a + b) / 2, q.at[j], q.at[k]
+            if any(r is not g and r is not q and all(r.box[0][x] <= point[x] <= r.box[1][x] for x in range(3)) for r in ps):
+                return True
+    return False
+
+
 def axle_report(text: str) -> list[tuple[str, ...]]:
     """("touches-only", axle, part) when an axle end only meets a part's face; ("gear-free", gear, side, axle)
     when nothing on the axle stops the gear on that side, so it can come off; ("gear-play", gear, side, axle,
-    detail) when the nearest stop on that side is more than 1.5 LDU away. Rubber bands are no stop."""
+    detail) when the nearest stop on that side is more than 1.5 LDU away. Rubber bands are no stop, and a gear
+    pinned to a neighbour through its own pin holes is held."""
     ps = placements(text)
     out: list[tuple[str, ...]] = []
     for a in ps:
@@ -415,7 +440,7 @@ def axle_report(text: str) -> list[tuple[str, ...]]:
         if a.part in STOP_AT_PLUS_X:
             stop = s1 if a.world[i][0] > 0 else s0
         for g in near:
-            if g.part not in GEARS:
+            if g.part not in GEARS or _pinned(g, i, a, ps):
                 continue
             others = [(o0, o1, o.label) for o in near if o is not g and o.part not in BANDS
                       for o0, o1 in _material(o, i, pj, pk, 12)]
