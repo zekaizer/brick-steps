@@ -4,6 +4,7 @@ from lego_creator.bom import (
     IdMap,
     Shortage,
     check,
+    left,
     load_id_map,
     load_inventory,
     load_unknown_parts,
@@ -69,3 +70,9 @@ def test_check_skips_unknown_quantity_parts():
     errors, warnings = check(Counter({("57519", 0): 4, ("3001", 4): 1}), Counter(), unknown={"57519"})
     assert errors == [Shortage("3001", None, need=1, have=0)]
     assert warnings == []
+
+
+def test_left_subtracts_the_model_from_the_kits_part_by_colour():
+    used = Counter({("3001", 4): 1, ("3002", 1): 1})
+    kits = Counter({("3001", 4): 3, ("3020", 0): 2})
+    assert left(used, kits) == [("3001", 4, 3, 1, 2), ("3002", 1, 0, 1, -1), ("3020", 0, 2, 0, 2)]

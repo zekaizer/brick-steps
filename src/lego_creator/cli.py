@@ -20,7 +20,7 @@ from pathlib import Path
 
 import yaml
 
-from .bom import Bom, load_id_map, load_inventory, load_unknown_parts
+from .bom import Bom, left, load_id_map, load_inventory, load_unknown_parts, to_kit_space
 from .catalog import check_catalog, model_slug, new_meta, next_number, revise, updated
 from .export import ExportEnv, build_manual, build_site, load_mission_views, write_assets
 from .ldraw import Library, flatten, parse
@@ -196,8 +196,14 @@ def cmd_validate(root: Path, lib: Library, args: argparse.Namespace) -> int:
 
 
 def cmd_bom(root: Path, lib: Library, args: argparse.Namespace) -> int:
-    _, mpd = _load_model(root, args.slug)
+    meta, mpd = _load_model(root, args.slug)
     bom = flatten(parse(mpd.read_text(encoding="utf-8"), default_name=mpd.name))
+    if args.left:
+        required = to_kit_space(bom, load_id_map(root / "inventory" / "id-map.csv"))
+        print("kit_part,color,have,used,left")
+        for row in left(required, _load_kits(root, _kit_counts(meta.get("kits")))):
+            print(",".join(map(str, row)))
+        return 0
     print("part,color,qty,title")
     for (pid, color), n in sorted(bom.items()):
         print(f"{pid},{color},{n},{lib.title(pid) or '?'}")
@@ -318,6 +324,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("bom", help="print flattened BOM in LDraw ids")
     s.add_argument("slug")
+    s.add_argument("--left", action="store_true", help="what the model's kits still have, by kit part and colour")
     s.set_defaults(func=cmd_bom)
 
     s = sub.add_parser("instructions", help="export one model's manual (HTML + PDF) via LeoCAD")
