@@ -124,6 +124,18 @@ def test_bom_lists_parts_with_titles(tmp_path, capsys):
     assert "3001" in out and "Brick  2 x  4" in out
 
 
+def test_bom_left_lists_what_the_kits_still_have(tmp_path, capsys):
+    root = setup_root(tmp_path)
+    run(root, "new", "x")
+    mpd = root / "models" / "x-1" / "model.mpd"
+    mpd.write_text(mpd.read_text() + "1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n")
+    capsys.readouterr()
+    assert run(root, "bom", "x-1", "--left") == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[0] == "kit_part,color,have,used,left"
+    assert "3001,4,1,1,0" in lines and "54675,322,1,0,1" in lines
+
+
 def test_new_defaults_kits_to_owned_collection(tmp_path):
     root = setup_root(tmp_path)
     (root / ".local").mkdir()

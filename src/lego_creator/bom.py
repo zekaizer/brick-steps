@@ -85,3 +85,9 @@ def check(
         if p not in short_parts and p not in unknown and c != INHERIT_COLOR and need > available[(p, c)]
     ]
     return errors, warnings
+
+
+def left(required: Bom, available: Bom) -> list[tuple[str, int, int, int, int]]:
+    """(kit part, colour, have, used, left) for every part the kits hold or the model uses, in kit space."""
+    keys = sorted(set(required) | {k for k, n in available.items() if n > 0})
+    return [(p, c, available[(p, c)], required[(p, c)], available[(p, c)] - required[(p, c)]) for p, c in keys]
