@@ -8,6 +8,7 @@
     uv run python scripts/ldraw_measure.py axles SLUG         what each axle runs through; gears free to slide
     uv run python scripts/ldraw_measure.py balance SLUG       rough centre of gravity against the floor contacts
     uv run python scripts/ldraw_measure.py steps SLUG [MAX]   parts per instruction step, steps above MAX (10)
+    uv run python scripts/ldraw_measure.py line SLUG X Y Z AXIS   parts with holes on that line, pins already on it
     uv run python scripts/ldraw_measure.py assembly SLUG      parts with nothing to hold them yet, pins that
                                                               cannot be pushed in, parts that cannot slide on
 
@@ -560,6 +561,29 @@ def assembly_report(text: str) -> list[tuple[str, ...]]:
     return out
 
 
+def line_report(text: str, point: tuple[float, float, float], axis: str) -> dict:
+    """Parts with holes on the line through `point` along `axis`, and the pins or axles already on it."""
+    ps = placements(text)
+    i = "XYZ".index(axis.upper())
+    j, k = [x for x in range(3) if x != i]
+    holes, connectors = [], []
+    for p in ps:
+        if p.part in CONNECTORS and p.part not in BUSHES:
+            if p.axis(0) == i and abs(p.at[j] - point[j]) < 1 and abs(p.at[k] - point[k]) < 1:
+                connectors.append((p.label, *_ends(p, i)))
+            continue
+        along = []
+        for (pos, letter), _ in hole_list(p.key):
+            if abs(p.world[i]["XYZ".index(letter)]) < 0.999:
+                continue
+            w = apply(p.world, p.at, pos)
+            if abs(w[j] - point[j]) < 1 and abs(w[k] - point[k]) < 1:
+                along.append(w[i])
+        if along:
+            holes.append((p.label, min(along), max(along)))
+    return {"holes": sorted(holes, key=lambda h: h[1]), "connectors": sorted(connectors, key=lambda c: c[1])}
+
+
 def cmd_axles(target: str) -> None:
     report = axle_report(model_text(target))
     for w in report:
@@ -583,6 +607,15 @@ def cmd_steps(target: str, most: str = "10") -> None:
     print(f"{len(sizes)} steps, {len(big)} above {most} parts")
 
 
+def cmd_line(target: str, x: str, y: str, z: str, axis: str) -> None:
+    report = line_report(model_text(target), (float(x), float(y), float(z)), axis)
+    for label, lo, hi in report["holes"]:
+        print(f"hole  {label}  {axis.upper()} {lo:.0f}" + (f"..{hi:.0f}" if hi != lo else ""))
+    for label, lo, hi in report["connectors"]:
+        print(f"pin   {label}  {axis.upper()} {lo:.0f}..{hi:.0f}")
+    print(f"{len(report['holes'])} part(s) with holes on the line, {len(report['connectors'])} pin(s) or axle(s) on it")
+
+
 def cmd_assembly(target: str) -> None:
     report = assembly_report(model_text(target))
     for w in report:
@@ -594,7 +627,7 @@ if __name__ == "__main__":
     commands = {"bbox": lambda a: cmd_bbox(a), "holes": lambda a: cmd_holes(*a), "slice": lambda a: cmd_slice(*a),
                 "overlap": lambda a: cmd_overlap(*a), "pins": lambda a: cmd_pins(*a), "axles": lambda a: cmd_axles(*a),
                 "balance": lambda a: cmd_balance(*a), "steps": lambda a: cmd_steps(*a),
-                "assembly": lambda a: cmd_assembly(*a)}
+                "assembly": lambda a: cmd_assembly(*a), "line": lambda a: cmd_line(*a)}
     if len(sys.argv) < 3 or sys.argv[1] not in commands:
         sys.exit(__doc__)
     commands[sys.argv[1]](sys.argv[2:])

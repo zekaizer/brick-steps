@@ -71,3 +71,15 @@ def test_pin_shut_in_on_both_sides_cannot_be_inserted():
     open_below = model([f"0 0 0 0 {I} 32316.dat", above], [f"0 0 0 0 {UP} 61332.dat"])
     assert [w[1] for w in kinds(measure.assembly_report(shut), "pin-blocked")] == ["61332#3"]
     assert kinds(measure.assembly_report(open_below), "pin-blocked") == []
+
+
+def test_line_lists_holes_and_pins_on_it():
+    text = model([f"0 0 0 0 {I} 32316.dat", f"0 0 0 0 {UP} 61332.dat", f"14 10 20 0 {ALONG_X} 32523.dat"])
+    on_hole = measure.line_report(text, (0, 0, 0), "Y")
+    assert [h[0] for h in on_hole["holes"]] == ["32316#0"]
+    assert [c[0] for c in on_hole["connectors"]] == ["61332#1"]
+    beside = measure.line_report(text, (0, 0, 20), "Y")
+    assert [h[0] for h in beside["holes"]] == ["32316#0"] and beside["connectors"] == []
+    across = measure.line_report(text, (10, 0, 0), "Y")
+    assert [h[0] for h in across["holes"]] == ["32523#2"]
+
