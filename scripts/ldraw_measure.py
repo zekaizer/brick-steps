@@ -5,7 +5,7 @@
     uv run python scripts/ldraw_measure.py slice PART AXIS LO HI   bounding box of the geometry between LO and HI
     uv run python scripts/ldraw_measure.py overlap SLUG       placed parts whose boxes intersect
     uv run python scripts/ldraw_measure.py pins SLUG          pins and axles that share a hole
-    uv run python scripts/ldraw_measure.py axles SLUG         what each axle runs through; gears free to slide
+    uv run python scripts/ldraw_measure.py axles SLUG         axles that stop at a face; gears that can come off or have play
     uv run python scripts/ldraw_measure.py balance SLUG       rough centre of gravity against the floor contacts
     uv run python scripts/ldraw_measure.py steps SLUG [MAX]   parts per instruction step, steps above MAX (10)
     uv run python scripts/ldraw_measure.py line SLUG X Y Z AXIS   parts with holes on that line, pins already on it
@@ -46,6 +46,8 @@ AXLES = {"4519", "3705", "32073", "3706", "44294", "3707", "60485", "3708", "239
 # Axles with a stop at their local +X end.
 STOP_AT_PLUS_X = {"87083", "15462", "55013"}
 # Parts that turn on an axle and need something on both sides to stay in place.
+# Parts that bend away instead of stopping a gear.
+BANDS = {"85543"}
 GEARS = {"32270", "32498", "46372", "18575", "6589", "32198a", "35185", "4185a", "56903", "39367p01", "49295p01",
          "57519", "61254"}
 # Rough weights in grams; any other part is weighed by its box, beams by their holes.
@@ -383,7 +385,9 @@ def _material(q: Placed, i: int, pj: float, pk: float, radius: float) -> list[tu
 
 
 def axle_report(text: str) -> list[tuple[str, ...]]:
-    """("touches-only", axle, part) when an axle end only meets a part's face; ("gear-free", gear, side, axle)."""
+    """("touches-only", axle, part) when an axle end only meets a part's face; ("gear-free", gear, side, axle)
+    when nothing on the axle stops the gear on that side, so it can come off; ("gear-play", gear, side, axle,
+    detail) when the nearest stop on that side is more than 1.5 LDU away. Rubber bands are no stop."""
     ps = placements(text)
     out: list[tuple[str, ...]] = []
     for a in ps:
@@ -413,17 +417,21 @@ def axle_report(text: str) -> list[tuple[str, ...]]:
         for g in near:
             if g.part not in GEARS:
                 continue
-            others = [span for o in near if o is not g for span in _material(o, i, pj, pk, 12)]
+            others = [(o0, o1, o.label) for o in near if o is not g and o.part not in BANDS
+                      for o0, o1 in _material(o, i, pj, pk, 12)]
             for c0, c1 in _material(g, i, pj, pk, 8):
                 if min(c1, s1) - max(c0, s0) <= 1:
                     continue
                 for face, sign in ((c0, -1), (c1, 1)):
-                    if sign > 0:
-                        held = any(o0 <= face + 1.5 and o1 >= face + 0.5 for o0, o1 in others)
-                    else:
-                        held = any(o1 >= face - 1.5 and o0 <= face - 0.5 for o0, o1 in others)
-                    if not held and not (stop is not None and abs(stop - face) <= 4):
-                        out.append(("gear-free", g.label, f"{'+' if sign > 0 else '-'}{axis}", a.label))
+                    if stop is not None and abs(stop - face) <= 4:
+                        continue
+                    gaps = [(max(o0 - face, 0) if sign > 0 else max(face - o1, 0), label) for o0, o1, label in others
+                            if (o1 >= face + 0.5 if sign > 0 else o0 <= face - 0.5)]
+                    side = f"{'+' if sign > 0 else '-'}{axis}"
+                    if not gaps:
+                        out.append(("gear-free", g.label, side, a.label))
+                    elif (gap := min(gaps))[0] > 1.5:
+                        out.append(("gear-play", g.label, side, a.label, f"{gap[0]:.0f} LDU to {gap[1]}"))
     return out
 
 

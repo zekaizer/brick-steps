@@ -38,11 +38,22 @@ def test_axle_that_stops_at_a_beam_face_is_reported():
     assert "32316#0" in touching[0][2]
 
 
-def test_gear_with_nothing_on_one_side_is_reported():
+def test_gear_that_can_slide_off_the_axle_end_is_free():
+    # flush with the axle's top end, a half bush under it
     text = model([f"0 0 0 0 {I} 32316.dat", f"0 0 -30 40 {UP} 4519.dat",
-                  f"0 0 -40 40 {FLAT} 32270.dat", f"0 0 -55 40 {FLAT} 32123b.dat"])
-    free = kinds(measure.axle_report(text), "gear-free")
-    assert [(w[1], w[2]) for w in free] == [("32270#2", "+Y")]
+                  f"0 0 -50 40 {FLAT} 32270.dat", f"0 0 -35 40 {FLAT} 32123b.dat"])
+    report = measure.axle_report(text)
+    assert [(w[1], w[2]) for w in kinds(report, "gear-free")] == [("32270#2", "-Y")]
+    assert kinds(report, "gear-play") == []
+
+
+def test_gear_with_a_gap_to_the_next_part_has_play():
+    band = "15 0 -20 61 0 0 1 0 1 0 -1 0 0 85543.dat"  # a rubber band across the gap is no stop
+    text = model([f"0 0 0 0 {I} 32316.dat", f"0 0 -30 40 {UP} 4519.dat",
+                  f"0 0 -40 40 {FLAT} 32270.dat", f"0 0 -55 40 {FLAT} 32123b.dat", band])
+    report = measure.axle_report(text)
+    assert [w[1:3] + (w[4],) for w in kinds(report, "gear-play")] == [("32270#2", "+Y", "20 LDU to 32316#0")]
+    assert kinds(report, "gear-free") == []
 
 
 def test_balance_compares_the_centre_of_gravity_with_the_wheels():
@@ -92,3 +103,4 @@ def test_where_gives_model_coordinates_of_a_part_inside_a_submodel():
     assert round(lo[2]) == -29 and round(hi[2]) == 69 and lo[0] < 40 < hi[0]  # 32316 spans Z -49..49
     with pytest.raises(SystemExit, match="no part labelled 32316#9"):
         measure.where_report(text, ["32316#9"])
+
