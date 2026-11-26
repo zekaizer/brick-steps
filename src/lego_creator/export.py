@@ -21,7 +21,7 @@ from .instructions import build_mpd, plan
 from .ldraw import Library, flatten, parse, step_groups
 from .missions import blocks_html, parse_missions
 from .pack3d import pack_model
-from .render import render_image, render_steps
+from .render import RenderCache, render_image, render_steps
 from .site import (
     CableItem,
     CableView,
@@ -60,6 +60,7 @@ class ExportEnv:
     tokens: dict
     config_dir: Path
     workers: int = min(8, os.cpu_count() or 1)
+    render_cache: RenderCache | None = None
 
     @property
     def library(self) -> Library:
@@ -95,7 +96,7 @@ def _render_thumbs(keys: set[tuple[str, int]], thumbs_dir: Path, env: ExportEnv)
             mpd = thumbs_dir / f".{out.stem}.mpd"
             mpd.write_text(build_mpd(text, parse(text), library, env.custom), encoding="utf-8")
             render_image(mpd, out, env.ldraw, env.config_dir / out.stem, width=THUMB_SIZE, height=THUMB_SIZE,
-                         background=env.color("paper"))
+                         background=env.color("paper"), cache=env.render_cache)
             mpd.unlink()
         return key, out
 
@@ -132,7 +133,7 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
         section_images.append(render_steps(
             build, out_dir / "img" / f"s{k}-.png", env.ldraw, env.config_dir / f"{slug}-s{k}",
             submodel=section.submodel, count=count, width=STEP_SIZE[0], height=STEP_SIZE[1],
-            background=env.color("paper"), highlight=env.color("yellow"),
+            background=env.color("paper"), highlight=env.color("yellow"), cache=env.render_cache,
         ))
 
     cables = cable_plan(doc)
