@@ -195,3 +195,26 @@ def test_release_check_prints_notes_or_fails(tmp_path, capsys):
     assert main(["--root", str(tmp_path), "release-check", "v0.0.2"]) == 0
     assert capsys.readouterr().out.strip() == "### Fixed\n- A bug"
     assert main(["--root", str(tmp_path), "release-check", "v0.0.3"]) == 1
+
+
+def test_site_render_cache_keeps_only_what_the_build_used(tmp_path, monkeypatch, capsys):
+    import shutil
+
+    import lego_creator.cli as cli
+
+    root = setup_root(tmp_path)
+    shutil.copytree(Path(__file__).resolve().parents[1] / "design", root / "design")
+    cache = tmp_path / "renders"
+    for entry in ("kept", "stale"):
+        (cache / entry).mkdir(parents=True)
+
+    def fake_build_site(root, out, env, *, pdf):
+        assert env.render_cache.root == cache
+        env.render_cache.used.add("kept")
+        env.render_cache.reused, env.render_cache.rendered = 2, 1
+        return [], []
+
+    monkeypatch.setattr(cli, "build_site", fake_build_site)
+    assert run(root, "site", "--out", str(tmp_path / "site"), "--no-pdf", "--render-cache", str(cache)) == 0
+    assert sorted(p.name for p in cache.iterdir()) == ["kept"]
+    assert "render cache: 2 reused, 1 rendered, 1 removed" in capsys.readouterr().out

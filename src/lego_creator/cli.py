@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import dataclasses
 import datetime
 import gzip
 import io
@@ -28,6 +29,7 @@ from .missions import check_missions, parse_missions
 from .ports import parse_ports
 from .rebrickable import extract_set_inventory
 from .release import check_release, release_notes
+from .render import RenderCache
 from .validate import validate
 
 # Editable install: src/lego_creator/cli.py -> repo root.
@@ -262,9 +264,15 @@ def _export_env(root: Path, args: argparse.Namespace) -> ExportEnv:
 
 def cmd_site(root: Path, _lib: Library, args: argparse.Namespace) -> int:
     out = args.out or root / "site"
-    cards, lab = build_site(root, out, _export_env(root, args), pdf=not args.no_pdf)
+    env = _export_env(root, args)
+    if args.render_cache:
+        env = dataclasses.replace(env, render_cache=RenderCache(args.render_cache))
+    cards, lab = build_site(root, out, env, pdf=not args.no_pdf)
     print(f"{out}: {len(cards)} manual(s): {', '.join(c.slug for c in cards) or 'none'}; "
           f"lab: {', '.join(c.slug for c in lab) or 'none'}")
+    if cache := env.render_cache:
+        # Pruned only after a whole site build, which uses every picture the site needs.
+        print(f"render cache: {cache.reused} reused, {cache.rendered} rendered, {cache.prune()} removed")
     return 0
 
 
@@ -336,6 +344,8 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("site", help="build the gallery, manuals and the hidden lab of drafts (GitHub Pages) via LeoCAD")
     s.add_argument("--out", type=Path, help="default: <root>/site")
     s.add_argument("--no-pdf", action="store_true")
+    s.add_argument("--render-cache", type=Path, metavar="DIR",
+                   help="reuse pictures from earlier builds kept in DIR; keeps only what this build used")
     s.set_defaults(func=cmd_site)
 
     s = sub.add_parser("release-check", help="check tag, pyproject and CHANGELOG agree; print the release notes")
