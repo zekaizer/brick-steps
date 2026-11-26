@@ -7,11 +7,15 @@ kits:
   45681-1: 1
   tank-tracks: 1
 status: draft
-version: 1
+version: 2
 created: '2026-11-22'
 revisions:
 - version: 1
   date: '2026-11-22'
   note: First draft
+- version: 2
+  date: '2026-11-27'
+  note: Spacers keep the idlers and road wheels in line; band pins go in before the
+    road wheel
 story:
   intro: 탱크 4호는 옛날 탱크처럼 마름모 궤도로 턱을 넘어요.
