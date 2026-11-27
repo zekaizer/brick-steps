@@ -287,6 +287,7 @@ name = "lego-creator"
 version = "0.0.1"
 source = { editable = "." }
 dependencies = [
+    { name = "fonttools", extra = ["woff"] },
     { name = "pyyaml" },
     { name = "weasyprint" },
 ]
@@ -298,6 +299,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "fonttools", extras = ["woff"], specifier = ">=4.60" },
     { name = "pyyaml", specifier = ">=6" },
     { name = "weasyprint", specifier = ">=70.0" },
 ]
