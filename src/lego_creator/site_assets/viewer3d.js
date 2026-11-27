@@ -16,6 +16,7 @@ import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 
 const DROP_MS = 600;
 const WAVE_MS = 450; // a wave of new parts starts this long after the wave before it
+const LEAD_MS = 400; // a wave's arrows show this long before its parts move, so the child sees the way first
 const ARROW_LENGTH = [0.12, 0.25]; // clamp(travel, 0.12 R, 0.25 R), R the section's radius
 const SLICE_MS = 8; // longest stretch the page's thread works before letting the browser draw
 const PLUG_TRAVEL = 50; // LDU a cable slides into its port when the cable card opens
@@ -86,6 +87,7 @@ function start(worker) {
     }
     if (arrive) {
       if (arrive.t0 === null) arrive.t0 = now;
+      for (const a of arrows?.children ?? []) a.visible = now - arrive.t0 >= a.userData.wave * WAVE_MS;
       let moving = false;
       for (const p of arrive.parts) {
         // Parts of a later wave wait at their start, glowing, until their wave goes.
@@ -93,12 +95,7 @@ function start(worker) {
         if (k < 1) moving = true;
         p.part.group.position.copy(p.part.base).addScaledVector(p.from, Math.pow(1 - k, 3) * p.travel);
       }
-      if (moving) {
-        draw();
-      } else {
-        showArrows(arrive.marks);
-        arrive = null;
-      }
+      if (moving) draw(); else arrive = null;
     }
     if (controls.autoRotate) { controls.update(); draw(); }
     renderer.render(scene, camera);
@@ -428,6 +425,7 @@ function start(worker) {
     const from = new THREE.Vector3(...m.from);
     group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), from.clone().negate());
     group.position.fromArray(m.at).addScaledVector(from, length);
+    group.userData.wave = m.wave;
     return group;
   }
   function showArrows(marks) {
@@ -467,12 +465,12 @@ function start(worker) {
     const marks = moves.filter((m) => m.at);
     if (moves.length && animate && !calm) {
       const parts = moves.map((m, k) => ({
-        part: section.parts[shown - fresh + k], from: new THREE.Vector3(...m.from), travel: m.travel, delay: m.wave * WAVE_MS,
+        part: section.parts[shown - fresh + k], from: new THREE.Vector3(...m.from), travel: m.travel,
+        delay: (marks.length ? LEAD_MS : 0) + m.wave * WAVE_MS,
       }));
-      arrive = { parts, marks, t0: null };
-    } else {
-      showArrows(marks); // going back or reduced motion: the arrows alone say how the parts went in
+      arrive = { parts, t0: null };
     }
+    showArrows(marks); // without motion (going back, reduced motion) all at once; tick shows a wave's at its turn
     controls.autoRotate = !fresh && !cables && !calm; // the finished model turns until touched
     replay.hidden = (!fresh && !cables) || calm;
     draw();
