@@ -14,7 +14,6 @@ import re
 import shutil
 import sys
 import tomllib
-import urllib.request
 import zipfile
 from collections import Counter
 from pathlib import Path
@@ -37,6 +36,7 @@ from .export import (
     load_mission_views,
     write_assets,
 )
+from .fetch import download
 from .geometry import PIN_LIKE, Shapes
 from .insertion import FROM_ABOVE, insertions
 from .instructions import plan
@@ -53,8 +53,6 @@ DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 LDRAW_URL = "https://library.ldraw.org/library/updates/complete.zip"
 REBRICKABLE_URL = "https://cdn.rebrickable.com/media/downloads/{}.csv.gz"
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
-# library.ldraw.org rejects urllib's default agent with 403; identify the tool instead (no personal data).
-USER_AGENT = "brick-steps/0 (+https://github.com/zekaizer/brick-steps)"
 
 MPD_TEMPLATE = """\
 0 FILE main.ldr
@@ -259,20 +257,8 @@ def cmd_bom(root: Path, lib: Library, args: argparse.Namespace) -> int:
     return 0
 
 
-def _download(url: str, dest: Path) -> Path:
-    if not dest.exists():
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        print(f"downloading {url}")
-        tmp = dest.with_suffix(dest.suffix + ".part")
-        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-        with urllib.request.urlopen(req) as resp, tmp.open("wb") as f:
-            shutil.copyfileobj(resp, f)
-        tmp.rename(dest)
-    return dest
-
-
 def cmd_fetch_ldraw(root: Path, _lib: Library, _args: argparse.Namespace) -> int:
-    z = _download(LDRAW_URL, root / ".cache" / "dl" / "complete.zip")
+    z = download(LDRAW_URL, root / ".cache" / "dl" / "complete.zip")
     with zipfile.ZipFile(z) as zf:
         zf.extractall(root)  # archive entries are rooted at ldraw/
     print(f"extracted to {root / 'ldraw'}")
@@ -286,7 +272,7 @@ def _read_gz_csv(path: Path) -> list[dict[str, str]]:
 
 def cmd_import_inventory(root: Path, _lib: Library, args: argparse.Namespace) -> int:
     dl = root / ".cache" / "dl"
-    tables = {t: _read_gz_csv(_download(REBRICKABLE_URL.format(t), dl / f"{t}.csv.gz"))
+    tables = {t: _read_gz_csv(download(REBRICKABLE_URL.format(t), dl / f"{t}.csv.gz"))
               for t in ("inventories", "inventory_parts", "parts")}
     names = {r["part_num"]: r["name"] for r in tables["parts"]}
     for set_num in args.sets:
