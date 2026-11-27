@@ -3,6 +3,7 @@
 import json
 import re
 import shutil
+import zlib
 from html import unescape
 from pathlib import Path
 
@@ -35,6 +36,17 @@ MODEL = """0 FILE main.ldr
 """
 
 
+def pdf_font_names(pdf):
+    """Embedded font names without their subset tag, from the PDF's objects and its inflated streams."""
+    data = pdf
+    for m in re.finditer(rb"stream\r?\n(.*?)endstream", pdf, re.DOTALL):
+        try:
+            data += zlib.decompress(m.group(1))
+        except zlib.error:
+            pass
+    return {n.decode().split("+")[-1] for n in re.findall(rb"/BaseFont\s*/([A-Za-z0-9+\-]+)", data)}
+
+
 def test_build_site_end_to_end(tmp_path):
     root = tmp_path / "repo"
     shutil.copytree(ROOT / "design", root / "design")
@@ -45,9 +57,9 @@ def test_build_site_end_to_end(tmp_path):
                                       "story:\n  intro: 보드를 지켜요.\n")
         (d / "model.mpd").write_text(MODEL)
         (d / "missions.yaml").write_text("- title: 기다리기\n  goal: 잠깐 쉬어요.\n  blocks:\n"
-                                         "  - [when_program_starts]\n  - [wait, 1]\n")
+                                         "  - [when_program_starts]\n  - [wait, 1]\n  - [start_moving, clockwise]\n")
     tokens = json.loads((ROOT / "design" / "brick-steps.tokens.json").read_text(encoding="utf-8"))
-    env = ExportEnv(ROOT / "ldraw", ROOT / "custom", tokens, tmp_path / "cfg")
+    env = ExportEnv(ROOT / "ldraw", ROOT / "custom", tokens, tmp_path / "cfg", ROOT / ".cache" / "fonts")
     out = tmp_path / "site"
 
     cards, lab = build_site(root, out, env, pdf=True)
@@ -73,6 +85,16 @@ def test_build_site_end_to_end(tmp_path):
     for src in __import__("re").findall(r'src="([^"]+\.png)"', page):
         assert (out / "bot" / src).resolve().is_file(), src
     assert (out / "bot" / "manual.pdf").read_bytes()[:4] == b"%PDF"
+    # Every page and the PDF use the fonts the build cut down to their characters (ADR 0004).
+    css = (out / "assets" / "site.css").read_text(encoding="utf-8")
+    fonts = re.findall(r'url\("(fonts/[^"]+\.woff2)"\)', css)
+    assert {f.split("/")[1].rsplit("-", 1)[0] for f in fonts} == {"noto-sans-kr", "lexend", "noto-sans-math"}
+    assert sorted(f"assets/{f}" for f in fonts) == sorted(p.relative_to(out).as_posix()
+                                                         for p in (out / "assets" / "fonts").iterdir())
+    names = pdf_font_names((out / "bot" / "manual.pdf").read_bytes())
+    # Only the site's fonts: a device font here means a character of the PDF that they lack (the mission has ↻ ▾).
+    assert {"Noto-Sans-KR", "Lexend-Bold"} <= names, names
+    assert all(n.startswith(("Noto-Sans-KR", "Lexend", "Noto-Sans-Math")) for n in names), names
     # The 3D model is parsed in a module worker, which has no import map: its imports are plain paths.
     worker = (out / "assets" / "viewer3d-worker.js").read_text(encoding="utf-8")
     for rel in __import__("re").findall(r'from "(\./[^"]+)"', worker):
@@ -105,7 +127,7 @@ def test_rebuilt_manual_drops_pictures_from_an_earlier_build(tmp_path):
     from lego_creator.export import build_manual
 
     tokens = json.loads((ROOT / "design" / "brick-steps.tokens.json").read_text(encoding="utf-8"))
-    env = ExportEnv(ROOT / "ldraw", ROOT / "custom", tokens, tmp_path / "cfg")
+    env = ExportEnv(ROOT / "ldraw", ROOT / "custom", tokens, tmp_path / "cfg", ROOT / ".cache" / "fonts")
     out = tmp_path / "manual"
     (out / "img").mkdir(parents=True)
     (out / "img" / "s0-09.png").write_bytes(b"stale")  # a ninth step the model no longer has
@@ -130,7 +152,7 @@ def test_a_rebuilt_manual_takes_every_picture_from_the_render_cache(tmp_path):
     builds = []
     for name in ("first", "second"):
         cache = RenderCache(tmp_path / "cache")
-        env = ExportEnv(ROOT / "ldraw", ROOT / "custom", tokens, tmp_path / "cfg", render_cache=cache)
+        env = ExportEnv(ROOT / "ldraw", ROOT / "custom", tokens, tmp_path / "cfg", ROOT / ".cache" / "fonts", render_cache=cache)
         out = tmp_path / name
         build_manual("두 블록", "bricks", model, env, out, thumbs_dir=out / "parts", thumbs_href="parts/",
                      assets_href="assets/", sw_href=None, manifest_href=None, pdf=False)
@@ -158,9 +180,20 @@ def test_service_worker_cache_is_named_after_the_build(tmp_path):
     assert stamp_service_worker(sw, tmp_path) != first
 
 
+def test_service_worker_lists_the_fonts_of_the_build(tmp_path):
+    from lego_creator.export import stamp_service_worker
+
+    (tmp_path / "assets" / "fonts").mkdir(parents=True)
+    for name in ("lexend-bbb.woff2", "noto-sans-kr-aaa.woff2"):
+        (tmp_path / "assets" / "fonts" / name).write_bytes(b"font")
+    stamped = stamp_service_worker('const CACHE = "brick-steps";\nconst FONTS = [];\n', tmp_path)
+    assert 'const FONTS = ["./assets/fonts/lexend-bbb.woff2", "./assets/fonts/noto-sans-kr-aaa.woff2"];' in stamped
+
+
 def test_service_worker_drops_caches_of_older_builds():
     sw = (ROOT / "src" / "lego_creator" / "site_assets" / "sw.js").read_text(encoding="utf-8")
     assert 'const CACHE = "brick-steps";' in sw
     assert "caches.keys()" in sw and "caches.delete" in sw
     # Fonts and pinned three.js live in a cache no deploy deletes, so an update does not reload them.
     assert 'const STATIC = "brick-steps-static";' in sw and "n !== STATIC" in sw
+    assert "const FONTS = [];" in sw and "fonts.g" not in sw

@@ -33,6 +33,7 @@ All notable changes to this project are recorded here. The format follows
 - A hidden lab at `/lab/` shows models that are still drafts, marked as untested. Tap the gallery logo five times to open it.
 
 ### Changed
+- Every device shows the site and the PDF manuals in the same letters: the fonts come with the site, cut down to the characters its pages use, instead of from Google Fonts, where a slow first load left the page in the device's own font (ADR 0004).
 - Buttons are lighter: everything a child taps is at least 48 px instead of 56 px, the portrait Back and Next buttons fit their words at either end instead of filling the width, and a mission's question is as wide as its text.
 - The footer shows the site version as v0.0.1.
 - Steps no longer change by swiping, which fired when a finger slipped; the buttons, section bar and contents move between them.

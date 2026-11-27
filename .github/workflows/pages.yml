@@ -42,6 +42,12 @@ jobs:
           path: ldraw
           key: ${{ env.LDRAW_CACHE_KEY }}
       - run: uv sync --frozen
+      # Source fonts for the site's subset fonts (ADR 0004); the key is the pinned google/fonts commit in fonts.py.
+      - name: Cache source fonts
+        uses: actions/cache@v4
+        with:
+          path: .cache/fonts
+          key: fonts-5026800714d0
       - name: Fetch LDraw library
         if: steps.ldraw.outputs.cache-hit != 'true'
         run: uv run lc fetch-ldraw

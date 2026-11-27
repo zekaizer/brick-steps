@@ -33,6 +33,7 @@ from .export import (
     ExportEnv,
     build_manual,
     build_site,
+    finish_manuals,
     load_mission_views,
     write_assets,
 )
@@ -292,7 +293,7 @@ def cmd_import_inventory(root: Path, _lib: Library, args: argparse.Namespace) ->
 
 def _export_env(root: Path, args: argparse.Namespace) -> ExportEnv:
     tokens = json.loads((root / "design" / "brick-steps.tokens.json").read_text(encoding="utf-8"))
-    return ExportEnv(args.ldraw_dir, root / "custom", tokens, root / ".cache" / "leocad")
+    return ExportEnv(args.ldraw_dir, root / "custom", tokens, root / ".cache" / "leocad", root / ".cache" / "fonts")
 
 
 def cmd_site(root: Path, _lib: Library, args: argparse.Namespace) -> int:
@@ -314,12 +315,13 @@ def cmd_instructions(root: Path, _lib: Library, args: argparse.Namespace) -> int
     out = args.out or root / "models" / args.slug / "out" / "manual"
     env = _export_env(root, args)
     write_assets(out / "assets", env.tokens)
-    card = build_manual(
+    manual = build_manual(
         meta.get("name", args.slug), args.slug, mpd.read_text(encoding="utf-8"), env, out,
         thumbs_dir=out / "parts", thumbs_href="parts/", assets_href="assets/", sw_href=None, manifest_href=None,
         pdf=not args.no_pdf, intro=(meta.get("story") or {}).get("intro"), missions=load_mission_views(mpd.parent),
     )
-    print(f"{out / 'index.html'}: {card.step_count} steps, {card.part_count} parts")
+    finish_manuals(out, [manual], env, pdf=not args.no_pdf)
+    print(f"{out / 'index.html'}: {manual.card.step_count} steps, {manual.card.part_count} parts")
     return 0
 
 

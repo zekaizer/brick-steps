@@ -89,7 +89,6 @@ class GalleryCard:
     based_on: str | None = None
 
 
-FONTS = "https://fonts.googleapis.com/css2?family=Lexend:wght@600&family=Noto+Sans+KR:wght@400;500;700&display=optional"
 TAGLINE = "AI와 함께 만들고, 한 단계씩 따라 해요"
 MAKER = "만든 사람 Luke Lee"
 
@@ -106,7 +105,6 @@ def _head(title: str, *, assets: str, manifest: str | None, print_mode: bool, no
         '<meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
         f"<title>{_e(title)}</title>",
-        f'<link rel="stylesheet" href="{FONTS}">',
         f'<link rel="stylesheet" href="{_e(assets)}site.css">',
     ]
     if noindex:

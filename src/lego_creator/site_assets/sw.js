@@ -2,12 +2,14 @@
 // Pages, styles, scripts, pictures and 3D data: network first, falling back to the cache when offline or slow,
 // so a page and the files it was built with always come from the same deploy. Serving each file from the cache
 // on its own mixed an old page with a newer stylesheet after an update.
-// three.js (pinned version) and Google Fonts never change under the same URL: cache first.
-// The build renames the cache after its files (export.stamp_service_worker); a new worker deletes older caches.
-// Fonts and pinned three.js go to STATIC, which no deploy deletes: re-downloading fonts after every update made
-// the first screen swap fonts (and shift) on the iPad.
+// three.js (pinned version) and the fonts (named after their bytes) never change under the same URL: cache first.
+// The build renames the cache after its files and lists its fonts (export.stamp_service_worker); a new worker
+// deletes older caches.
+// Fonts and pinned three.js go to STATIC, which outlives deploys so an update does not download them again; a new
+// worker drops the STATIC files its build does not pin.
 const CACHE = "brick-steps";
 const STATIC = "brick-steps-static";
+const FONTS = [];
 const SHELL = [
   "./", "./assets/site.css", "./assets/manual.js", "./manifest.webmanifest", "./brand/brick-steps-lockup.svg", "./favicon.svg",
   // 3D step view (ADR 0002)
@@ -24,9 +26,10 @@ const SHELL = [
   "./assets/vendor/three-0.187.0/addons/lines/LineMaterial.js",
 ];
 
+const pinned = [...SHELL.filter((u) => u.includes("/vendor/")), ...FONTS];
+
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  const pinned = SHELL.filter((u) => u.includes("/vendor/"));
   const rest = SHELL.filter((u) => !u.includes("/vendor/"));
   event.waitUntil(Promise.all([
     caches.open(CACHE).then((c) => c.addAll(rest)),
@@ -37,9 +40,12 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
+  const keep = new Set(pinned.map((u) => new URL(u, self.location).href));
   event.waitUntil(
     caches.keys()
       .then((names) => Promise.all(names.filter((n) => n.startsWith("brick-steps") && n !== CACHE && n !== STATIC).map((n) => caches.delete(n))))
+      .then(() => caches.open(STATIC))
+      .then(async (c) => { for (const req of await c.keys()) if (!keep.has(req.url)) await c.delete(req); })
       .then(() => self.clients.claim())
   );
 });
@@ -47,13 +53,13 @@ self.addEventListener("activate", (event) => {
 function cacheable(request) {
   if (request.method !== "GET") return false;
   const url = new URL(request.url);
-  return url.origin === self.location.origin || url.hostname.endsWith("fonts.googleapis.com") || url.hostname.endsWith("fonts.gstatic.com");
+  return url.origin === self.location.origin;
 }
 
 const SLOW_MS = 3000;
 
 function immutable(url) {
-  return url.pathname.includes("/assets/vendor/") || url.hostname.endsWith("fonts.googleapis.com") || url.hostname.endsWith("fonts.gstatic.com");
+  return url.pathname.includes("/assets/vendor/") || url.pathname.includes("/assets/fonts/");
 }
 
 function save(cache, request, res) {

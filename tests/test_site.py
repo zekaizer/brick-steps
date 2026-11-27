@@ -104,15 +104,13 @@ def test_draft_manual_says_it_is_untested_and_hides_from_search():
     assert "noindex" not in plain and "아직 만들어 보지 않은" not in plain
 
 
-def test_fonts_never_swap_in_after_the_page_is_shown():
-    from lego_creator.site import FONTS
+def test_pages_load_no_font_from_another_site():
+    pages = manual_html(VIEW, assets="../assets/", sw="../sw.js", manifest="../manifest.webmanifest") + gallery_html([])
+    assert "fonts.googleapis" not in pages and "fonts.gstatic" not in pages
 
-    assert "display=optional" in FONTS and "display=swap" not in FONTS
 
-
-def test_pages_load_brand_fonts_and_favicons():
+def test_pages_load_favicons():
     html = manual_html(VIEW, assets="../assets/", sw="../sw.js", manifest="../manifest.webmanifest")
-    assert "family=Lexend" in html and "Jua" not in html
     assert 'rel="icon" type="image/svg+xml" href="../favicon.svg"' in html
     assert 'rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png"' in html
     assert 'rel="apple-touch-icon" href="../apple-touch-icon.png"' in html

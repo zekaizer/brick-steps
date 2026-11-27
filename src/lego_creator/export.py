@@ -18,6 +18,7 @@ import yaml
 
 from .cables import cable_plan
 from .design import tokens_css
+from .fonts import fetch_fonts, uncovered, used_chars, write_fonts
 from .geometry import Shapes
 from .insertion import insertions, moves
 from .instructions import build_mpd, plan
@@ -63,6 +64,7 @@ class ExportEnv:
     custom: Path
     tokens: dict
     config_dir: Path
+    fonts: Path  # source fonts (fonts.fetch_fonts)
     workers: int = min(8, os.cpu_count() or 1)
     render_cache: RenderCache | None = None
 
@@ -77,6 +79,13 @@ class ExportEnv:
 
     def color(self, name: str) -> str:
         return next(t["value"] for t in self.tokens["color"]["tokens"] if t["name"] == name)
+
+
+@dataclass(frozen=True)
+class Manual:
+    card: GalleryCard
+    out_dir: Path
+    print_html: str  # the page manual.pdf is made from
 
 
 def write_assets(dest: Path, tokens: dict) -> None:
@@ -140,8 +149,11 @@ def load_mission_views(model_dir: Path) -> list[MissionView]:
 def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: Path, *, thumbs_dir: Path,
                  thumbs_href: str, assets_href: str, sw_href: str | None, manifest_href: str | None,
                  pdf: bool, intro: str | None = None, missions: list[MissionView] | None = None,
-                 draft: bool = False, brand_href: str | None = None, version: int | None = None) -> GalleryCard:
-    """Render and write one manual into out_dir (index.html, img/, optional manual.pdf)."""
+                 draft: bool = False, brand_href: str | None = None, version: int | None = None) -> Manual:
+    """Render and write one manual into out_dir (index.html, img/).
+
+    `pdf` only links manual.pdf; finish_manuals writes it once the fonts exist.
+    """
     doc = parse(mpd_text, default_name=f"{slug}.ldr")
     sections = plan(doc)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -207,14 +219,31 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
     (out_dir / "index.html").write_text(
         manual_html(view, assets=assets_href, sw=sw_href, manifest=manifest_href, brand=brand_href), encoding="utf-8"
     )
+    build.unlink()
+    return Manual(GalleryCard(slug, name, f"{slug}/{rel(hero)}", view.part_count, len(steps)), out_dir,
+                  manual_html(view, assets=assets_href, print_mode=True))
+
+
+def finish_manuals(site: Path, manuals: list[Manual], env: ExportEnv, *, pdf: bool) -> None:
+    """Fonts for every page under site/, its scripts, site.css and the PDF pages, then the PDFs (ADR 0004).
+
+    Call after every page is written; site/assets/ holds write_assets' files.
+    """
+    assets = site / "assets"
+    texts = [p.read_text(encoding="utf-8") for p in sorted(site.rglob("*.html"))]
+    texts += [(assets / name).read_text(encoding="utf-8") for name in ("manual.js", "viewer3d.js", "site.css")]
+    texts += [m.print_html for m in manuals]
+    sources, chars = fetch_fonts(env.fonts), used_chars(texts)
+    if missing := uncovered(sources, chars):
+        print(f"warning: no site font has {' '.join(missing)}; it shows in the device's font")
+    css = write_fonts(assets / "fonts", sources, chars)
+    with (assets / "site.css").open("a", encoding="utf-8") as f:
+        f.write(css)
     if pdf:
         from weasyprint import HTML  # imported lazily: needs Pango, only for export
 
-        HTML(string=manual_html(view, assets=assets_href, print_mode=True), base_url=str(out_dir)).write_pdf(
-            out_dir / "manual.pdf"
-        )
-    build.unlink()
-    return GalleryCard(slug, name, f"{slug}/{rel(hero)}", view.part_count, len(steps))
+        for m in manuals:
+            HTML(string=m.print_html, base_url=str(m.out_dir)).write_pdf(m.out_dir / "manual.pdf")
 
 
 def _brand(root: Path, out: Path) -> None:
@@ -233,6 +262,8 @@ def stamp_service_worker(sw: str, site: Path) -> str:
     for path in sorted(p for p in site.rglob("*") if p.is_file() and p.name != "sw.js"):
         digest.update(path.relative_to(site).as_posix().encode())
         digest.update(path.read_bytes())
+    fonts = [f"./{p.relative_to(site).as_posix()}" for p in sorted((site / "assets" / "fonts").glob("*.woff2"))]
+    sw = sw.replace("const FONTS = [];", f"const FONTS = {json.dumps(fonts)};", 1)
     return sw.replace('const CACHE = "brick-steps";', f'const CACHE = "brick-steps-{digest.hexdigest()[:12]}";', 1)
 
 
@@ -247,6 +278,7 @@ def build_site(root: Path, out: Path, env: ExportEnv, *, pdf: bool) -> tuple[lis
     (out / ".nojekyll").write_text("", encoding="utf-8")
     _brand(root, out)
 
+    manuals: list[Manual] = []
     cards: list[GalleryCard] = []
     lab: list[GalleryCard] = []
     for meta_path in sorted((root / "models").glob("*/model.yaml")):
@@ -255,20 +287,22 @@ def build_site(root: Path, out: Path, env: ExportEnv, *, pdf: bool) -> tuple[lis
         ready = is_published(meta)
         up = "../" if ready else "../../"
         intro = (meta.get("story") or {}).get("intro")
-        card = build_manual(
+        manual = build_manual(
             meta.get("name", slug), slug, (meta_path.parent / "model.mpd").read_text(encoding="utf-8"), env,
             (out if ready else out / "lab") / slug, thumbs_dir=out / "parts", thumbs_href=f"{up}parts/",
             assets_href=f"{up}assets/", sw_href=f"{up}sw.js", manifest_href=f"{up}manifest.webmanifest", pdf=pdf,
             intro=intro, missions=load_mission_views(meta_path.parent),
             draft=not ready, brand_href=f"{up}brand/", version=meta.get("version"),
         )
+        manuals.append(manual)
         (cards if ready else lab).append(dataclasses.replace(
-            card, series=str(meta.get("series") or slug), number=int(meta.get("number") or 1), story=intro,
+            manual.card, series=str(meta.get("series") or slug), number=int(meta.get("number") or 1), story=intro,
             based_on=meta.get("based_on"),
         ))
     site_version = importlib.metadata.version("lego-creator")
     (out / "index.html").write_text(gallery_html(cards, version=site_version), encoding="utf-8")
     (out / "lab").mkdir(exist_ok=True)
     (out / "lab" / "index.html").write_text(gallery_html(lab, lab=True, version=site_version), encoding="utf-8")
+    finish_manuals(out, manuals, env, pdf=pdf)
     (out / "sw.js").write_text(stamp_service_worker((ASSETS / "sw.js").read_text(encoding="utf-8"), out), encoding="utf-8")
     return cards, lab
