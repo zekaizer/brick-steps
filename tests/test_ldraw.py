@@ -4,6 +4,7 @@ import pytest
 
 from lego_creator.ldraw import (
     Library,
+    Meta,
     flatten,
     normalize_name,
     parse,
@@ -54,7 +55,21 @@ def test_parse_counts_steps_and_collects_meta_tokens():
     text = "0 STEP\n0 !LC PORT A 54675c01 drive_left\n0 STEP\n0 // plain comment\n"
     sub = parse(text).main
     assert sub.steps == 2
-    assert ["!LC", "PORT", "A", "54675c01", "drive_left"] in sub.metas
+    assert [m.tokens for m in sub.metas] == [("!LC", "PORT", "A", "54675c01", "drive_left")]
+
+
+def test_meta_keeps_its_line_step_and_the_reference_after_it():
+    text = (
+        "0 FILE main.ldr\n"
+        "1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n"
+        "0 STEP\n"
+        "0 !LC INSERT FROM +X\n"
+        "0 // the brick goes on from the side\n"
+        "1 4 0 0 0 1 0 0 0 1 0 0 0 1 3020.dat\n"
+        "0 !LC GROUND\n"
+    )
+    sub = parse(text).main
+    assert sub.metas == [Meta(("!LC", "INSERT", "FROM", "+X"), 4, 1, 1), Meta(("!LC", "GROUND"), 7, 1, 2)]
 
 
 def test_flatten_multiplies_submodels_and_inherits_color():

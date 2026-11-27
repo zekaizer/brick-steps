@@ -122,6 +122,27 @@ Submodels whose parts touch the floor (tracks, wheels) declare `0 !LC GROUND`. E
 
 Both checks compare oriented bounding boxes, so they over-report around round parts. Treat a warning as a place to look in a viewer, not as proof.
 
+## How a part comes in
+
+The 3D step view moves each new part to its place from one side, in the submodel's own axes. The side is worked out from the geometry (`src/lego_creator/insertion.py`):
+
+- A pin or axle goes in along its own axis from the side it sticks out on.
+- A part going onto pins or axles that are already in place (a beam, the hub, a gear, a bush) slides along them from their free tips. Within a step, pins go in before what goes onto them, whatever the file order.
+- Tread links (57518) and rubber bands go on from above.
+- Anything else takes the first clear side: from above, then the horizontal sides that point away from what is built, then from below. A track loop around its sprockets comes in from the side.
+- When every side is blocked, the part drops from above.
+
+A part starts just beyond what it has to clear: along its axis, the span of the part and what it goes into or onto plus 20 LDU, and at least 40 LDU. Parts of one wave that come from the same side travel the same distance, so bushes and a sprocket on one axle slide on as a train.
+
+`uv run lc insertions <slug>` lists every reference in build order with its side, rule, wave and travel, what it goes into or onto, and what is in its way. Read it after a model change. When a guess is wrong, put one line directly above the reference, in the same step:
+
+```
+0 !LC INSERT FROM +X
+1 16 148 0 0 1 0 0 0 1 0 0 0 1 track.ldr
+```
+
+The side is `+X`, `-X`, `+Y`, `-Y`, `+Z` or `-Z` in the submodel's axes (`-Y` is above): the part starts on that side of its place and moves in. Only comments and other metas may stand between the line and its reference. `lc validate` reports a malformed line (`insert-malformed`), a line with no reference after it in its step (`insert-dangling`) and a second line for one reference (`insert-twice`) as errors. It warns `insert-blocked` when the path from that side runs into an earlier part, or when a joint on another axis holds the part (a pin cannot leave its hole sideways), and `insert-unneeded` when the view brings the part in from that side anyway. The path check casts rays, so treat `insert-blocked` like `turn-interference`: a place to look.
+
 ## Instruction structure
 
 - The first `0 FILE` is the main model. Make each subassembly (drivebase, arm, sensor mount) its own `0 FILE` so that it becomes an instruction callout.

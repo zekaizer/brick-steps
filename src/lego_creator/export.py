@@ -11,12 +11,15 @@ import re
 import shutil
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 
 import yaml
 
 from .cables import cable_plan
 from .design import tokens_css
+from .geometry import Shapes
+from .insertion import insertions, moves
 from .instructions import build_mpd, plan
 from .ldraw import Library, flatten, parse, step_groups
 from .missions import blocks_html, parse_missions
@@ -66,6 +69,11 @@ class ExportEnv:
     @property
     def library(self) -> Library:
         return Library(self.ldraw, self.custom)
+
+    @cached_property
+    def shapes(self) -> Shapes:
+        """Part geometry, read once for every manual of a build."""
+        return Shapes((self.ldraw, self.custom))
 
     def color(self, name: str) -> str:
         return next(t["value"] for t in self.tokens["color"]["tokens"] if t["name"] == name)
@@ -163,6 +171,7 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
     def rel(p: Path) -> str:
         return p.relative_to(out_dir).as_posix()
 
+    arrivals = insertions(doc, env.shapes)
     steps: list[StepView] = []
     cable_view: CableView | None = None
     main = doc.main.name
@@ -178,7 +187,8 @@ def build_manual(name: str, slug: str, mpd_text: str, env: ExportEnv, out_dir: P
             ]
             steps.append(StepView(len(steps) + 1, rel(section_images[k][st.number]), tray,
                                   None if section.submodel == main else section.title,
-                                  sub=section.submodel, shown=shown, fresh=fresh))
+                                  sub=section.submodel, shown=shown, fresh=fresh,
+                                  moves=moves(arrivals[section.submodel][shown - fresh:shown])))
             if cables and section.submodel == cables.submodel and st.number == cables.after_step + 1:
                 cable_view = CableView(
                     steps[-1].number, cables.submodel, cables.shown, steps[-1].image,

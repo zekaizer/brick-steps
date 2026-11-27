@@ -1,4 +1,7 @@
+import dataclasses
 import json
+import re
+from html import unescape
 
 from lego_creator.site import (
     GalleryCard,
@@ -153,6 +156,17 @@ def test_manual_html_tells_the_3d_view_what_each_step_shows():
     assert '<script type="module" src="../assets/viewer3d.js"></script>' in html
     assert html.index('type="importmap"') < html.index("viewer3d.js")
     assert "LDraw.org Parts Library" in html
+
+
+def test_build_steps_tell_the_3d_view_how_each_new_part_comes_in():
+    moves = [{"from": [1, 0, 0], "travel": 60, "wave": 0, "at": [36, 0, 0]}, {"from": [0, -1, 0], "travel": 40, "wave": 1}]
+    steps = [StepView(1, "img/s0-01.png", sub="main.ldr", shown=2, fresh=2, moves=moves)]
+    view = dataclasses.replace(VIEW_CABLES, steps=steps, cables=dataclasses.replace(VIEW_CABLES.cables, after=1))
+    html = manual_html(view, assets="../assets/")
+    found = re.findall(r'<figure class="step-img"[^>]*?data-moves="([^"]*)"', html)
+    assert [json.loads(unescape(m)) for m in found] == [moves]  # the cable and done figures add no parts
+    assert html.index('data-moves="') < html.index('id="cables"')
+    assert "data-moves" not in manual_html(view, assets="../assets/", print_mode=True)
 
 
 def test_manual_html_keeps_step_images_as_the_fallback_under_3d():

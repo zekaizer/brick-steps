@@ -3,6 +3,9 @@
 // The page's thread never parses LDraw: viewer3d-worker.js does, and the page assembles what it sends in slices
 // of a few milliseconds, so taps and scrolling are never held up. Until a section is ready its picture stays,
 // with a pill saying the 3D view is on its way.
+// A step figure's data-moves (site.py, from insertion.moves) says how each new part comes in: entry k is
+// section.parts[shown - fresh + k], which starts at base + from * travel (LDraw axes of its submodel) and moves to
+// base in its wave; an entry with `at` gets an arrow whose tip is there.
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LDrawLoader } from "three/addons/loaders/LDrawLoader.js";
@@ -12,6 +15,8 @@ import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 
 const DROP_MS = 600;
+const WAVE_MS = 450; // a wave of new parts starts this long after the wave before it
+const ARROW_LENGTH = [0.12, 0.25]; // clamp(travel, 0.12 R, 0.25 R), R the section's radius
 const SLICE_MS = 8; // longest stretch the page's thread works before letting the browser draw
 const PLUG_TRAVEL = 50; // LDU a cable slides into its port when the cable card opens
 const VIEW_DIR = new THREE.Vector3(-1, 0.85, 1).normalize(); // front-left, from above
@@ -60,8 +65,11 @@ function start(worker) {
   const geometries = new Map();
   const directs = new Map();
   const outline = new LineMaterial({ color: yellow, linewidth: 2 });
+  // Arrows are drawn over the model, like the port letters, so one on the far side still shows.
+  const arrowFill = new THREE.MeshBasicMaterial({ color: yellow, depthTest: false });
+  const arrowEdge = new THREE.MeshBasicMaterial({ color: token("--ink"), depthTest: false });
   const glow = new Map();
-  let section = null, drop = null, plugIn = null, queued = false, shownCard = null, cableGroup = null;
+  let section = null, arrive = null, plugIn = null, queued = false, shownCard = null, cableGroup = null, arrows = null;
 
   function draw() {
     if (queued) return;
@@ -76,11 +84,21 @@ function start(worker) {
       for (const c of plugIn.cables) c.group.position.copy(c.out).multiplyScalar(left * PLUG_TRAVEL);
       if (k === 1) plugIn = null; else draw();
     }
-    if (drop) {
-      if (drop.t0 === null) drop.t0 = now;
-      const k = Math.min(1, (now - drop.t0) / DROP_MS), left = Math.pow(1 - k, 3);
-      for (const p of drop.parts) p.group.position.copy(p.base).y -= left * drop.height; // LDraw -Y is up
-      if (k === 1) drop = null; else draw();
+    if (arrive) {
+      if (arrive.t0 === null) arrive.t0 = now;
+      let moving = false;
+      for (const p of arrive.parts) {
+        // Parts of a later wave wait at their start, glowing, until their wave goes.
+        const k = Math.min(1, Math.max(0, (now - arrive.t0 - p.delay) / DROP_MS));
+        if (k < 1) moving = true;
+        p.part.group.position.copy(p.part.base).addScaledVector(p.from, Math.pow(1 - k, 3) * p.travel);
+      }
+      if (moving) {
+        draw();
+      } else {
+        showArrows(arrive.marks);
+        arrive = null;
+      }
     }
     if (controls.autoRotate) { controls.update(); draw(); }
     renderer.render(scene, camera);
@@ -216,7 +234,7 @@ function start(worker) {
       await breathe();
     }
     root.updateMatrixWorld(true);
-    const model = root.children.find((c) => c.isGroup);
+    const model = root.children.find((c) => c.isGroup); // its frame is the submodel's LDraw axes
     const parts = [];
     for (const group of model.children.filter((c) => c.isGroup)) {
       const meshes = [];
@@ -231,7 +249,7 @@ function start(worker) {
     const ball = new THREE.Sphere(new THREE.Vector3().fromArray(msg.ball.center), msg.ball.radius);
     const distance = ball.radius / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.05;
     await renderer.compileAsync(root, camera, scene); // shaders compile without holding the page where the GPU allows
-    return { root, parts, ball, distance };
+    return { root, model, parts, ball, distance };
   }
 
   // Sections the worker is asked for, in the order the child is likely to need them.
@@ -388,11 +406,50 @@ function start(worker) {
     return moving;
   }
 
+  // A solid arrow with its tip at `at`, pointing along -from: the way the part went in.
+  function arrowMesh(m) {
+    const length = THREE.MathUtils.clamp(m.travel, ARROW_LENGTH[0] * section.ball.radius,
+      ARROW_LENGTH[1] * section.ball.radius);
+    const head = length * 0.4, e = length * 0.03;
+    // The ink copy is drawn first and a little larger, so only the outline shows round the yellow fill.
+    const shape = (grow) => [
+      new THREE.CylinderGeometry(length * 0.08 + grow, length * 0.08 + grow, length - head + grow, 16)
+        .translate(0, (length - head) / 2, 0),
+      new THREE.ConeGeometry(length * 0.2 + grow, head + 2 * grow, 24).translate(0, length - head / 2, 0),
+    ];
+    const group = new THREE.Group();
+    for (const [geometries, material, order] of [[shape(e), arrowEdge, 10], [shape(0), arrowFill, 11]]) {
+      for (const geometry of geometries) {
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.renderOrder = order;
+        group.add(mesh);
+      }
+    }
+    const from = new THREE.Vector3(...m.from);
+    group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), from.clone().negate());
+    group.position.fromArray(m.at).addScaledVector(from, length);
+    return group;
+  }
+  function showArrows(marks) {
+    if (!marks.length) return;
+    arrows = new THREE.Group();
+    for (const m of marks) arrows.add(arrowMesh(m));
+    section.model.add(arrows);
+  }
+  function clearArrows() {
+    if (!arrows) return;
+    arrows.removeFromParent();
+    arrows.traverse((o) => o.geometry?.dispose());
+    arrows = null;
+  }
+
   function apply(figure, animate) {
     const shown = Number(figure.dataset.shown), fresh = Number(figure.dataset.fresh);
-    drop = null;
+    const moves = figure.dataset.moves ? JSON.parse(figure.dataset.moves) : [];
+    arrive = null;
     plugIn = null;
     clearCables();
+    clearArrows();
     const cables = figure.dataset.cables ? JSON.parse(figure.dataset.cables) : null;
     const keep = cables ? new Set(JSON.parse(figure.dataset.keep || "[]")) : null;
     if (cables) {
@@ -407,8 +464,14 @@ function start(worker) {
       setFresh(p, i < shown && i >= shown - fresh);
       if (keep && !keep.has(i)) setFaded(p, true);
     });
-    if (fresh && animate && !calm) {
-      drop = { parts: section.parts.slice(shown - fresh, shown), t0: null, height: section.ball.radius * 0.9 };
+    const marks = moves.filter((m) => m.at);
+    if (moves.length && animate && !calm) {
+      const parts = moves.map((m, k) => ({
+        part: section.parts[shown - fresh + k], from: new THREE.Vector3(...m.from), travel: m.travel, delay: m.wave * WAVE_MS,
+      }));
+      arrive = { parts, marks, t0: null };
+    } else {
+      showArrows(marks); // going back or reduced motion: the arrows alone say how the parts went in
     }
     controls.autoRotate = !fresh && !cables && !calm; // the finished model turns until touched
     replay.hidden = (!fresh && !cables) || calm;

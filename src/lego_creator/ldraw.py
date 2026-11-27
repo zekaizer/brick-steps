@@ -34,11 +34,21 @@ class PartRef:
     step: int = field(default=0, compare=False)
 
 
+@dataclass(frozen=True)
+class Meta:
+    """A `0 !...` line where it stands in its submodel."""
+
+    tokens: tuple[str, ...]  # from the "!" keyword on
+    line: int  # 1-based line number in the file
+    step: int  # 0-based build step, counted like PartRef.step
+    next_ref: int  # index in Submodel.refs of the first reference after it; len(refs) when none follows
+
+
 @dataclass
 class Submodel:
     name: str
     refs: list[PartRef] = field(default_factory=list)
-    metas: list[list[str]] = field(default_factory=list)
+    metas: list[Meta] = field(default_factory=list)
     steps: int = 0
     title: str = ""
 
@@ -127,7 +137,7 @@ def parse(text: str, default_name: str = "main.ldr") -> Document:
             if tokens[1] in STEP_METAS:
                 current.steps += 1
             elif tokens[1].startswith("!"):
-                current.metas.append(tokens[1:])
+                current.metas.append(Meta(tuple(tokens[1:]), lineno, current.steps, len(current.refs)))
             elif (
                 not current.title
                 and tokens[1] not in COMMAND_METAS

@@ -29,6 +29,7 @@ class StepView:
     sub: str | None = None  # 3D view: submodel this step builds
     shown: int = 0  # 3D view: placed references visible at this step
     fresh: int = 0  # 3D view: how many of those are new in this step
+    moves: list[dict] = field(default_factory=list)  # 3D view: insertion.moves() of the new references, in order
 
 
 @dataclass(frozen=True)
@@ -213,10 +214,13 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
     total = len(view.steps)
     with_3d = bool(view.model3d) and not print_mode
 
-    def hooks(sub: str | None, shown: int, fresh: int) -> str:
+    def hooks(sub: str | None, shown: int, fresh: int, moves: list[dict] | None = None) -> str:
         if not with_3d or not sub:
             return ""
-        return f' data-sub="{_e(sub)}" data-shown="{shown}" data-fresh="{fresh}"'
+        out = f' data-sub="{_e(sub)}" data-shown="{shown}" data-fresh="{fresh}"'
+        if moves:
+            out += f' data-moves="{_e(json.dumps(moves, separators=(",", ":")))}"'
+        return out
 
     cover = (
         ('<p class="draft-note t-body">아직 만들어 보지 않은 설계예요. 부품이 안 맞을 수 있어요.</p>' if view.draft else "")
@@ -237,7 +241,7 @@ def manual_html(view: ManualView, *, assets: str, sw: str | None = None, manifes
             "</div>"
             f"{label}{_tray(step.tray)}"
         )
-        figure = (f'<figure class="step-img"{hooks(step.sub, step.shown, step.fresh)}>'
+        figure = (f'<figure class="step-img"{hooks(step.sub, step.shown, step.fresh, step.moves)}>'
                   f'<img src="{_e(step.image)}" alt="{step.number}단계 조립 모습" loading="lazy"></figure>')
         cards.append(f'<section class="card step" id="step-{step.number}" data-chapter="build">{_split(side, figure)}</section>')
         if view.cables and view.cables.after == step.number:

@@ -1,7 +1,9 @@
 """End-to-end site build. Needs LeoCAD, Xvfb and the LDraw library (`lc fetch-ldraw`)."""
 
 import json
+import re
 import shutil
+from html import unescape
 from pathlib import Path
 
 import pytest
@@ -86,6 +88,12 @@ def test_build_site_end_to_end(tmp_path):
         mark = __import__("re").search(r'src="([^"]+brick-steps-mark\.svg)"', html).group(1)
         assert (base / mark).resolve().is_file(), mark
     assert 'data-sub="board.ldr" data-shown="3" data-fresh="2"' in page
+    # Every build step says how each of its new parts comes in; the cable and done figures add none.
+    figures = re.findall(r'<figure class="step-img" data-sub="[^"]*" data-shown="\d+" data-fresh="(\d+)"'
+                         r'(?: data-moves="([^"]*)")?', page)
+    moves = [json.loads(unescape(m)) for _, m in figures if m]
+    assert len(moves) == 4 and [len(m) for m in moves] == [int(f) for f, m in figures if m]
+    assert all(set(e) <= {"from", "travel", "wave", "at"} and e["travel"] > 0 for m in moves for e in m)
     assert page.index('id="step-1"') < page.index('id="cables"') < page.index('id="step-2"') and "보드" in page
     assert "보드를 지켜요." in page and 'id="mission-1"' in page and 'data-block="wait"' in page
     packed = (out / "bot" / "model3d.txt").read_text(encoding="utf-8")

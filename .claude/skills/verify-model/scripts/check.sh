@@ -38,8 +38,10 @@ run() {
 failed=0
 if [[ -n $slug ]]; then
   run validate uv run lc validate "$slug" || failed=1
+  run insertions uv run lc insertions "$slug"
 else
   echo "validate  skipped: $name is a file, not a slug"
+  echo "insertions skipped: $name is a file, not a slug"
 fi
 for check in pins overlap axles assembly balance steps; do
   run "$check" uv run python scripts/ldraw_measure.py "$check" "$target"

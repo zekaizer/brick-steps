@@ -147,7 +147,7 @@ async function step3d() {
   await page.goto(`${base}${slug}/#step-1`);
   check("step 1 is shown", (await current()) === "step-1");
   check("3D view replaces the picture", await visible("#step-1 figure.has-3d .stage3d canvas", 30000));
-  await page.waitForTimeout(1500); // the step's parts drop in for 600 ms; let them land
+  await page.waitForTimeout(2500); // the step's parts move in wave by wave for up to about 2 s; let them land
   const canvas = page.locator("#step-1 .stage3d canvas");
   const before = await canvas.screenshot({ path: path.join(dir, "3d-before.png") });
   await capture("3d-step-1");

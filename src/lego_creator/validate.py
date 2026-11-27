@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Collection
 
 from .bom import Bom, IdMap, check, to_kit_space
+from .geometry import Shapes
+from .insertion import check_insertions
 from .ldraw import INHERIT_COLOR, Document, Library, PartRef, flatten
 from .motion import PartBoxes, check_ground, check_turns, parse_turns
 from .ports import check_ports, parse_ports
@@ -42,7 +44,8 @@ def validate(
     unknown: Collection[str] = frozenset(),
 ) -> list[Issue]:
     """Check line syntax, matrices, colors, part resolution, kit inventory (when available is given), ports,
-    and whether declared moving parts turn into the model or parts scrape the floor (warnings, box approximation)."""
+    whether declared moving parts turn into the model or parts scrape the floor (warnings, box approximation),
+    and `0 !LC INSERT` lines (paths checked with rays, warnings)."""
     issues: list[Issue] = [
         Issue("error", "malformed-line", f"{sub} line {n}: {msg}") for sub, n, msg in doc.errors
     ]
@@ -83,4 +86,4 @@ def validate(
     turns, turn_issues = parse_turns(doc)
     boxes = PartBoxes(library.roots)
     return (issues + port_issues + check_ports(assignments, bom) + turn_issues
-            + check_turns(doc, turns, boxes) + check_ground(doc, boxes))
+            + check_turns(doc, turns, boxes) + check_ground(doc, boxes) + check_insertions(doc, Shapes(library.roots)))
