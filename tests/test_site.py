@@ -157,7 +157,7 @@ def test_manual_html_tells_the_3d_view_what_each_step_shows():
 
 
 def test_build_steps_tell_the_3d_view_how_each_new_part_comes_in():
-    moves = [{"from": [1, 0, 0], "travel": 60, "wave": 0, "at": [36, 0, 0]}, {"from": [0, -1, 0], "travel": 40, "wave": 1}]
+    moves = [{"from": [1, 0, 0], "travel": 60, "wave": 0}, {"from": [0, -1, 0], "travel": 40, "wave": 1}]
     steps = [StepView(1, "img/s0-01.png", sub="main.ldr", shown=2, fresh=2, moves=moves)]
     view = dataclasses.replace(VIEW_CABLES, steps=steps, cables=dataclasses.replace(VIEW_CABLES.cables, after=1))
     html = manual_html(view, assets="../assets/")

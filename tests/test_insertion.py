@@ -51,13 +51,7 @@ def test_bush_and_gear_slide_onto_an_axle_from_its_free_end_as_one_train():
     assert step[0].wave == step[1].wave and step[0].travel == step[1].travel
     wire = moves(step)
     assert [m["from"] for m in wire] == [[1, 0, 0], [1, 0, 0]]
-    assert [m.get("at") for m in wire] == [None, [56, 0, 0]]  # one arrow, 6 LDU beyond the gear's outer face
-
-
-def test_pins_in_different_holes_get_an_arrow_each():
-    pins = [f"0 10 0 {z} {I} 61332.dat" for z in (-20, 20)]
-    wire = moves(arrive(model([f"0 0 0 0 {HOLES_X} 32316.dat"], pins))[1:])
-    assert [m.get("at") for m in wire] == [[36, 0, -20], [36, 0, 20]]
+    assert [sorted(m) for m in wire] == [["from", "travel", "wave"]] * 2
 
 
 def test_loop_around_a_part_comes_in_from_the_side_when_above_is_blocked():

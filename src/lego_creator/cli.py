@@ -237,7 +237,7 @@ def cmd_insertions(root: Path, lib: Library, args: argparse.Namespace) -> int:
             print(row.rstrip())
             rows.append(a)
     above = sum(a.side == FROM_ABOVE for a in rows)
-    print(f"{len(rows)} reference(s): {above} from above, {len(rows) - above} with an arrow, "
+    print(f"{len(rows)} reference(s): {above} from above, {len(rows) - above} from the side, "
           f"{sum(a.blocked_by is not None for a in rows)} blocked, "
           f"{sum(a.rule == 'override' for a in rows)} set by 0 !LC INSERT")
     return 0

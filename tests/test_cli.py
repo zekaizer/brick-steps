@@ -212,5 +212,5 @@ def test_insertions_lists_how_each_part_comes_in_and_counts_them(tmp_path, capsy
     assert [line.split() for line in capsys.readouterr().out.splitlines()] == [
         "main.ldr step 1 line 6 3001 from -Y free wave 0 travel 40".split(),
         "main.ldr step 2 line 9 3001 from -Z override wave 0 travel 40".split(),
-        "2 reference(s): 1 from above, 1 with an arrow, 0 blocked, 1 set by 0 !LC INSERT".split(),
+        "2 reference(s): 1 from above, 1 from the side, 0 blocked, 1 set by 0 !LC INSERT".split(),
     ]

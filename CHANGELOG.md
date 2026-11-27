@@ -7,7 +7,7 @@ All notable changes to this project are recorded here. The format follows
 ## [Unreleased]
 
 ### Added
-- In the 3D step view each new part comes in the way it is put on: a pin along its own axis, a beam, the hub or a gear along the pins or axle it goes onto, a track from the side. Parts that go onto others in the same step wait their turn. A yellow arrow shows the way in just before a part that does not come from above moves, and stays beside it.
+- In the 3D step view each new part comes in the way it is put on: a pin along its own axis, a beam, the hub or a gear along the pins or axle it goes onto, a track from the side. Parts that go onto others in the same step wait their turn.
 - `lc insertions <slug>` lists, in build order, the side each part comes in from, how far it travels and in which wave, what it goes into or onto and what is in its way.
 - `0 !LC INSERT FROM <side>` above a reference in a model sets the side its part comes in from. `lc validate` checks these lines and warns when the path from that side runs into an earlier part or when the side is the one the part would take anyway.
 - `lc site --render-cache DIR` reuses step pictures and part thumbnails from an earlier build when nothing they depend on changed (the model, the LDraw files it uses, the colours, LeoCAD), and the Pages build keeps them between runs.

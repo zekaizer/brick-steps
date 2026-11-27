@@ -26,7 +26,7 @@ uv run python $M/views.py plane-1 --out .verify/model-plane-1/views
 
 ```
 validate  plane-1: 0 error(s), 3 warning(s)
-insertions 436 reference(s): 232 from above, 204 with an arrow, 1 blocked, 0 set by 0 !LC INSERT
+insertions 436 reference(s): 232 from above, 204 from the side, 1 blocked, 0 set by 0 !LC INSERT
 pins      0 pin or axle pair(s) sharing a hole
 overlap   75 candidate overlap(s) deeper than 2 LDU among 148 parts
 axles     3 axle finding(s)

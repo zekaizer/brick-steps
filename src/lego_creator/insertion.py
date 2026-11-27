@@ -35,9 +35,6 @@ MARGIN = 20.0  # LDU a part starts beyond the last thing it has to clear
 MIN_TRAVEL = 40.0
 PIN_RADIUS = 8.0  # faces with a vertex this close to a pin's line hold the pin; hole walls are at 6
 FACE_SAMPLES = ((0.0, 0.0), (0.7, 0.7), (0.7, -0.7), (-0.7, 0.7), (-0.7, -0.7))  # of a box face's half sizes
-ARROW_GAP = 6.0  # LDU from a part's outer face to the tip of its arrow
-TRAIN_GAP = 20.0  # parts coming in on one line no further apart than this share one arrow
-SAME_LINE = 2.0
 
 Rule = Literal["override", "joint", "flexible", "free", "fallback"]
 Box = tuple[Vec, Vec]
@@ -140,54 +137,9 @@ def check_insertions(doc: Document, shapes: Shapes) -> list[Issue]:
 def moves(arrivals: Sequence[Insertion]) -> list[dict]:
     """What the 3D view needs for the new references of one step, in the same order.
 
-    `from` is the side as a unit vector, `travel` and `wave` are ints. Parts that do not come from above get an
-    arrow: one per train of parts on one line from one side, as `at` (the tip, in the submodel's axes) on the
-    entry of the part furthest out.
+    `from` is the side as a unit vector, `travel` and `wave` are ints.
     """
-    tips = _arrow_tips(arrivals)
-    out = []
-    for k, a in enumerate(arrivals):
-        entry: dict = {"from": list(a.side.vector), "travel": round(a.travel), "wave": a.wave}
-        if k in tips:
-            entry["at"] = [round(c) for c in tips[k]]
-        out.append(entry)
-    return out
-
-
-def _arrow_tips(arrivals: Sequence[Insertion]) -> dict[int, Vec]:
-    lines: list[tuple[Side, Vec, list[int]]] = []
-    for k, a in enumerate(arrivals):
-        if a.side == FROM_ABOVE:
-            continue
-        j, l = _others(a.side.axis)
-        c = _centre(a.box)
-        line = next((m for side, at, m in lines if side == a.side and abs(at[j] - c[j]) <= SAME_LINE
-                     and abs(at[l] - c[l]) <= SAME_LINE), None)
-        if line is None:
-            lines.append((a.side, c, [k]))
-        else:
-            line.append(k)
-    tips: dict[int, Vec] = {}
-    for side, _, members in lines:
-        i = side.axis
-        members.sort(key=lambda m: arrivals[m].box[0][i])
-        trains = [[members[0]]]
-        for m in members[1:]:
-            if arrivals[m].box[0][i] - max(arrivals[n].box[1][i] for n in trains[-1]) <= TRAIN_GAP:
-                trains[-1].append(m)
-            else:
-                trains.append([m])
-        for train in trains:
-            if side.sign > 0:
-                k = max(train, key=lambda m: arrivals[m].box[1][i])
-                face = arrivals[k].box[1][i] + ARROW_GAP
-            else:
-                k = min(train, key=lambda m: arrivals[m].box[0][i])
-                face = arrivals[k].box[0][i] - ARROW_GAP
-            tip = list(_centre(arrivals[k].box))
-            tip[i] = face
-            tips[k] = (tip[0], tip[1], tip[2])
-    return tips
+    return [{"from": list(a.side.vector), "travel": round(a.travel), "wave": a.wave} for a in arrivals]
 
 
 @dataclass(frozen=True)

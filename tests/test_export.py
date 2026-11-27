@@ -115,7 +115,7 @@ def test_build_site_end_to_end(tmp_path):
                          r'(?: data-moves="([^"]*)")?', page)
     moves = [json.loads(unescape(m)) for _, m in figures if m]
     assert len(moves) == 4 and [len(m) for m in moves] == [int(f) for f, m in figures if m]
-    assert all(set(e) <= {"from", "travel", "wave", "at"} and e["travel"] > 0 for m in moves for e in m)
+    assert all(set(e) == {"from", "travel", "wave"} and e["travel"] > 0 for m in moves for e in m)
     assert page.index('id="step-1"') < page.index('id="cables"') < page.index('id="step-2"') and "보드" in page
     assert "보드를 지켜요." in page and 'id="mission-1"' in page and 'data-block="wait"' in page
     packed = (out / "bot" / "model3d.txt").read_text(encoding="utf-8")
