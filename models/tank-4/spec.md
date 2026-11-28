@@ -4,6 +4,8 @@
 
 Tank 1 with rhombus tracks, after the First World War's Mark IV: each track climbs to a high front horn, so the tank can put its nose on a step, and a sprung road wheel lets the ground run give a little.
 
+Published in the gallery on 2026-11-28, before a real build, at the maintainer's request. The open questions below are still open.
+
 ## Mechanism
 
 - The drive is tank 1's: two large motors side by side turn the sprockets at (y 0, z 0). Two upright 11 x 7 frames carry the rear sprockets, now in the frames' holes at (y -40, z 280), and the hub on two 9L beams. Tank 1's hand-turned turret is left out: the horn beams pass where it turned.
