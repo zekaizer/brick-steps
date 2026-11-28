@@ -18,7 +18,7 @@ All notable changes to this project are recorded here. The format follows
 - 비행기 1호: an A-10 at about 1:42, 42 cm across, with a raised canopy, a gun under the nose turned through bevel gears, two engine pods whose intakes spin on one motor, tapered wings with a rounded leading edge, four missile racks and twin fins.
 - 탱크 1호 is published in the gallery.
 - 탱크 4호 is published in the gallery.
-- 탱크 4호: tank 1 with rhombus tracks around a high front horn and a road wheel sprung by a rubber band.
+- 탱크 4호: tank 1 with trapezoid tracks around a high front horn. The motors drive the rear sprockets from high up, so the hull clears the ground by 94 LDU (about 38 mm) between the tracks.
 - 탱크 3호 (draft, in the lab): tank 2 with an LMS-ESP32 board on port D for driving from a Bluetooth gamepad.
 - 탱크 2호 (draft, in the lab): tank 1 with a low, wide turret on the large turntable, turned a full circle by a medium motor, fenders over the tracks and turret missions.
 - The screen stays on while a manual is open (where the browser supports it), so the iPad does not lock between steps.

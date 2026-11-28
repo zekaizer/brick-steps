@@ -36,8 +36,11 @@ What building models has taught us, so the next model does not relearn it. The `
 - **Choose the wheelbase from the link pitch, then find holes for it.** A loop is 2 × wheelbase + 10 links around the sprockets, so it closes exactly only when the wheelbase is a multiple of 15 LDU. Holes on the 20 LDU grid give that only at multiples of 60. The tank's 280 LDU needs 28.8 links and gets 29, slightly loose. (tank-1, 2026-11-22, unverified)
 - **The tread is wider than the sprocket.** A 96 LDU link on a 36 LDU sprocket reaches 30 LDU past it on each side, so nothing else may stand within that band at track height. (tank-1, 2026-11-22)
 
-- **A track that wraps more wheels needs more links.** Every wheel off the straight line between two sprockets lengthens the loop; tank 4's rhombus needs 35 links a side against tank 1's 29. Count the owned links before choosing the shape. `scripts/gen_tank_rhombus_track.py` wraps any convex set of wheels. (tank-4, 2026-11-22, unverified)
-- **Let a sprung road wheel take up the slack.** Choose one link more than the loop needs and let a rubber band press a road wheel into the ground run. (tank-4, 2026-11-22, unverified)
+- **A track that wraps more wheels needs more links.** Every wheel off the straight line between two sprockets lengthens the loop; tank 4's trapezoid needs 37 links a side against tank 1's 29. Count the owned links before choosing the shape. `scripts/gen_tank_rhombus_track.py` wraps any convex set of wheels. (tank-4, 2026-11-22, unverified)
+- **Let a sprung road wheel take up the slack.** Choose one link more than the loop needs and let a rubber band press a road wheel into the ground run. The band needs an anchor below the arm, so it only fits a hull that reaches down to the ground run. (tank-4, 2026-11-22, unverified)
+- **Measure the clearance between the tracks, not only under them.** A tank that climbs needs its belly above the step as well as its tracks; tank 4's motors first hung 12 LDU above the ground between the tracks. Put the motors high on the rear sprockets, as tank 1 has them on its front ones, and hang the ground run's wheels from beams below the frames. (tank-4, 2026-11-28, unverified)
+- **Keep gears out of the tread's width.** A 96 LDU tread on a sprocket at x 148 covers x 100..196, and its links reach in towards every wheel's axle. A gear stage between the frame and the track runs into the links; drive the sprocket's own axle instead. (tank-4, 2026-11-28)
+- **Check two wheels in one track for each other.** Tank 4's road wheel first sat 89 LDU from the rear sprocket, whose radii add to 98. (tank-4, 2026-11-28)
 
 ## Moving parts
 
